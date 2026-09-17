@@ -357,7 +357,7 @@ export function TypingTestPage() {
 
   // phase === "running"
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-6">
+    <div className="mx-auto max-w-6xl space-y-4 p-6 practice-workspace">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold font-devanagari">{t("test_title")}</h1>
         <button

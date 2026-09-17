@@ -159,7 +159,7 @@ export function LessonPracticePage() {
   const progressRatio = snapshot.characters.length ? snapshot.cursor / snapshot.characters.length : 0;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6">
+    <div className="mx-auto max-w-6xl space-y-6 p-6 practice-workspace">
       <div className="flex items-center justify-between">
         <div>
           <div className="text-xs font-medium uppercase text-brand-600 font-devanagari">

@@ -52,3 +52,33 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+
+
+/* Supplied practice-room artwork and realistic hand guide. */
+main:has(.practice-workspace) {
+  background-image: linear-gradient(rgba(245,250,255,.16),rgba(232,244,255,.2)), url("./assets/practice-background.png");
+  background-position: center; background-size: cover; background-attachment: local;
+}
+.practice-workspace { position: relative; isolation: isolate; }
+.practice-workspace > * { position: relative; z-index: 1; }
+.practice-workspace .rounded-xl.bg-white,
+.practice-workspace .rounded-2xl.bg-white,
+.practice-workspace .rounded-lg.bg-white {
+  background-color: rgba(255,255,255,.88); border-color: rgba(173,203,235,.72); backdrop-filter: blur(10px);
+}
+.typing-hands { position: relative; z-index: 3; height: clamp(155px,18vw,220px); margin-top: clamp(-106px,-9vw,-76px); overflow: visible; pointer-events: none; }
+.typing-hands__art { position: absolute; left: 50%; bottom: -32px; width: min(96%,860px); transform: translateX(-50%); }
+.typing-hands__art img { display:block; width:100%; height:auto; opacity:.78; filter:drop-shadow(0 18px 20px rgba(31,91,156,.16)); user-select:none; }
+.typing-hands__marker { position:absolute; width:15px; height:15px; border:2px solid rgba(255,255,255,.95); border-radius:999px; transform:translate(-50%,-50%); animation:finger-guide-pulse 1s ease-in-out infinite; }
+.typing-hands__labels { position:absolute; inset:auto 13% 0; display:flex; justify-content:space-between; }
+.typing-hands__labels span { padding:5px 12px; border-radius:8px; color:white; background:rgba(39,131,222,.9); box-shadow:0 4px 12px rgba(39,131,222,.2); font-size:12px; font-weight:700; }
+@keyframes finger-guide-pulse { 50% { transform:translate(-50%,-50%) scale(1.2); } }
+@media (max-width:760px) {
+  main:has(.practice-workspace) { background-position:44% center; }
+  .typing-hands { height:120px; margin-top:-64px; }
+  .typing-hands__art { width:112%; bottom:-8px; }
+  .typing-hands__labels { inset-inline:6%; bottom:-4px; }
+}
+.dark main:has(.practice-workspace) {
+  background-image:linear-gradient(rgba(2,13,31,.72),rgba(8,28,55,.76)),url("./assets/practice-background.png");
+}
