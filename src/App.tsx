@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProfileProvider, useProfileContext, ACTIVE_PROFILE_STORAGE_KEY } from "./contexts/ProfileContext";
 import { AppLayout } from "./components/AppLayout";
+import { AppEnhancements } from "./components/AppEnhancements";
 import { ProfileSelectPage } from "./pages/ProfileSelectPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LearnPage } from "./pages/LearnPage";
@@ -10,6 +11,7 @@ import { LessonPracticePage } from "./pages/LessonPracticePage";
 import { TypingTestPage } from "./pages/TypingTestPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { KeyboardChartPage } from "./pages/KeyboardChartPage";
+import { RoadmapPage } from "./pages/RoadmapPage";
 import { MappingValidatorPage } from "./pages/MappingValidatorPage";
 import { FontSetupPage } from "./pages/FontSetupPage";
 import { ConverterPage } from "./pages/ConverterPage";
@@ -18,6 +20,7 @@ import { CertificatesPage } from "./pages/CertificatesPage";
 import { StatisticsPage } from "./pages/StatisticsPage";
 import { ReviewPage } from "./pages/ReviewPage";
 import { GamesPage } from "./pages/GamesPage";
+import { BackupPage } from "./pages/BackupPage";
 import { getProfile } from "./services/profileService";
 function ProfileRestorer({ children }: { children: React.ReactNode }) {
   const { setActiveProfile } = useProfileContext();
@@ -54,10 +57,12 @@ export default function App() {
                 <Route path="/games" element={<GamesPage />} />
                 <Route path="/statistics" element={<StatisticsPage />} />
                 <Route path="/certificates" element={<CertificatesPage />} />
+                <Route path="/backup" element={<BackupPage />} />
                 <Route path="/profiles" element={<ProfileSelectPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>
             </Routes>
+            <AppEnhancements />
           </BrowserRouter>
         </ProfileRestorer>
       </ProfileProvider>
