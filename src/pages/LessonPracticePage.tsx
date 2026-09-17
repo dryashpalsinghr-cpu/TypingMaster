@@ -1,24 +1,42 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { RotateCcw } from "lucide-react";
-import { englishBeginnerLessons } from "../data/lessons/englishBeginner";
+import { RotateCcw, ArrowRight } from "lucide-react";
+import { getLessonById, getLessonExercises } from "../data/lessons";
+import { getKeyboardLayout, getKeyboardRows } from "../keyboards";
 import { enQwertyLayout } from "../keyboards/enQwerty";
+import { resolveKeyOutput, findKeyForOutput, outputRequiresShift } from "../keyboards/resolveInput";
 import { useTypingEngine } from "../hooks/useTypingEngine";
+import { useT } from "../hooks/useTranslation";
 import { PracticeText } from "../components/PracticeText";
 import { VirtualKeyboard } from "../components/VirtualKeyboard";
 import { HandGuide } from "../components/HandGuide";
 import { useProfileContext } from "../contexts/ProfileContext";
+import { useThemeContext } from "../contexts/ThemeContext";
 import { saveAttempt } from "../services/statsService";
 import { touchProfileActivity } from "../services/profileService";
 import type { AttemptResult } from "../types";
+
+// English key -> normal-label lookup, used as the optional physical-key
+// hint overlay when practicing Hindi InScript (spec section 11).
+const ENGLISH_HINTS = new Map(enQwertyLayout.keys.map((k) => [k.code, k.normalLabel]));
 
 export function LessonPracticePage() {
   const { lessonId } = useParams();
   const navigate = useNavigate();
   const { activeProfile } = useProfileContext();
-  const lesson = englishBeginnerLessons.find((l) => l.id === lessonId) ?? englishBeginnerLessons[0];
+  const { interfaceLanguage } = useThemeContext();
+  const t = useT();
 
-  const { snapshot, typeCharacter, backspace, restart, metrics } = useTypingEngine(lesson.practiceText, {
+  const lesson = getLessonById(lessonId) ?? getLessonById("en-b-01")!;
+  const exercises = useMemo(() => getLessonExercises(lesson), [lesson]);
+  const [exerciseIndex, setExerciseIndex] = useState(0);
+  const exercise = exercises[exerciseIndex];
+
+  const layout = getKeyboardLayout(lesson.layout);
+  const rows = getKeyboardRows(lesson.layout);
+  const isHindi = lesson.language === "hi";
+
+  const { snapshot, typeCharacter, backspace, restart, metrics } = useTypingEngine(exercise.text, {
     strictMode: false,
     backspaceAllowed: true,
   });
@@ -26,14 +44,19 @@ export function LessonPracticePage() {
   const [shiftActive, setShiftActive] = useState(false);
   const [pressedCode, setPressedCode] = useState<string | null>(null);
   const [pressedCorrect, setPressedCorrect] = useState<boolean | null>(null);
-  const [saved, setSaved] = useState(false);
+  const [savedExercises, setSavedExercises] = useState<Set<number>>(new Set());
 
-  const expectedChar = snapshot.characters[snapshot.cursor]?.expected ?? null;
-  const activeKeyDef = expectedChar
-    ? enQwertyLayout.keys.find(
-        (k) => k.output === expectedChar || k.shiftOutput === expectedChar || (expectedChar === " " && k.code === "Space")
-      )
-    : null;
+  useEffect(() => {
+    setExerciseIndex(0);
+    setSavedExercises(new Set());
+  }, [lesson.id]);
+
+  // The very next character still needed to complete the current cell
+  // (a Devanagari cell can require more than one physical keystroke).
+  const currentCell = snapshot.characters[snapshot.cursor];
+  const nextNeededChar = currentCell ? currentCell.expected[currentCell.typedBuffer.length] ?? null : null;
+  const activeKeyDef = nextNeededChar ? findKeyForOutput(layout, nextNeededChar) : null;
+  const shiftRequired = nextNeededChar ? outputRequiresShift(layout, nextNeededChar) : false;
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -49,16 +72,21 @@ export function LessonPracticePage() {
         setPressedCode("Backspace");
         return;
       }
-      if (e.key.length !== 1 && e.key !== "Enter" && e.key !== "Tab") return;
+
+      // Resolve the character this physical key produces on the ACTIVE
+      // layout, regardless of the OS keyboard layout currently selected in
+      // Windows - this is what makes Hindi InScript typing consistent in
+      // the browser (spec section 10).
+      const resolved = resolveKeyOutput(layout, e.code, e.shiftKey);
+      if (resolved === null) return;
       e.preventDefault();
 
-      const char = e.key === "Enter" ? "\n" : e.key === "Tab" ? "\t" : e.key;
-      const expected = snapshot.characters[snapshot.cursor]?.expected;
+      const expectedNext = snapshot.characters[snapshot.cursor]?.expected[snapshot.characters[snapshot.cursor].typedBuffer.length];
       setPressedCode(e.code);
-      setPressedCorrect(char === expected);
-      typeCharacter(char);
+      setPressedCorrect(resolved === expectedNext);
+      typeCharacter(resolved);
     },
-    [backspace, typeCharacter, snapshot]
+    [backspace, typeCharacter, snapshot, layout]
   );
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
@@ -76,9 +104,11 @@ export function LessonPracticePage() {
     };
   }, [handleKeyDown, handleKeyUp]);
 
+  const isLastExercise = exerciseIndex === exercises.length - 1;
+
   useEffect(() => {
-    if (!snapshot.completed || saved || !activeProfile?.id) return;
-    setSaved(true);
+    if (!snapshot.completed || savedExercises.has(exerciseIndex) || !activeProfile?.id) return;
+    setSavedExercises((s) => new Set(s).add(exerciseIndex));
 
     const keyStats: AttemptResult["keyStats"] = {};
     for (const c of snapshot.characters) {
@@ -92,8 +122,8 @@ export function LessonPracticePage() {
 
     void saveAttempt({
       profileId: activeProfile.id,
-      language: "en",
-      layout: "en-qwerty",
+      language: lesson.language,
+      layout: lesson.layout,
       courseId: lesson.courseId,
       lessonId: lesson.id,
       kind: "lesson",
@@ -114,60 +144,91 @@ export function LessonPracticePage() {
       passed,
     });
 
-    void touchProfileActivity(activeProfile.id, lesson.id);
-  }, [snapshot.completed, saved, activeProfile, lesson, metrics, snapshot]);
+    if (isLastExercise) {
+      void touchProfileActivity(activeProfile.id, lesson.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snapshot.completed, exerciseIndex, activeProfile, lesson, metrics, snapshot, isLastExercise]);
+
+  const goToNextExercise = () => {
+    if (!isLastExercise) setExerciseIndex((i) => i + 1);
+    else navigate("/learn");
+  };
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <div className="text-xs font-medium uppercase text-brand-600">English QWERTY</div>
-          <h1 className="text-xl font-bold">{lesson.title}</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">{lesson.description}</p>
+          <div className="text-xs font-medium uppercase text-brand-600 font-devanagari">
+            {interfaceLanguage === "hi" ? layout.labelHi : layout.label}
+          </div>
+          <h1 className="text-xl font-bold font-devanagari">{interfaceLanguage === "hi" && lesson.titleHi ? lesson.titleHi : lesson.title}</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-devanagari">
+            {interfaceLanguage === "hi" && lesson.descriptionHi ? lesson.descriptionHi : lesson.description}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            {t("practice_exercise")} {exerciseIndex + 1} {t("practice_of")} {exercises.length}
+            {exercise.label ? ` · ${interfaceLanguage === "hi" && exercise.labelHi ? exercise.labelHi : exercise.label}` : ""}
+          </p>
         </div>
         <button
-          onClick={() => {
-            restart();
-            setSaved(false);
-          }}
+          onClick={restart}
           className="flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
         >
-          <RotateCcw size={14} /> Restart
+          <RotateCcw size={14} /> {t("practice_restart")}
         </button>
       </div>
 
       <div className="grid grid-cols-3 gap-4 sm:grid-cols-5">
-        <MetricPill label="Gross WPM" value={Math.round(metrics.grossWpm)} />
-        <MetricPill label="Net WPM" value={Math.round(metrics.netWpm)} />
-        <MetricPill label="Accuracy" value={`${metrics.accuracy}%`} />
-        <MetricPill label="Errors" value={snapshot.uncorrectedErrors} />
-        <MetricPill label="Progress" value={`${Math.round((snapshot.cursor / snapshot.characters.length) * 100)}%`} />
+        <MetricPill label={t("practice_gross_wpm")} value={Math.round(metrics.grossWpm)} />
+        <MetricPill label={t("practice_net_wpm")} value={Math.round(metrics.netWpm)} />
+        <MetricPill label={t("practice_accuracy")} value={`${metrics.accuracy}%`} />
+        <MetricPill label={t("practice_errors")} value={snapshot.uncorrectedErrors} />
+        <MetricPill
+          label={t("practice_progress")}
+          value={`${Math.round((snapshot.cursor / snapshot.characters.length) * 100)}%`}
+        />
       </div>
 
-      <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} />
+      <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} />
+
+      {isHindi && (
+        <p className="text-xs text-slate-400 font-devanagari">
+          {t("practice_input_mode")}: {layout.labelHi} — यह ऐप कुंजी-कोड आधारित मैपिंग उपयोग करता है, इसलिए Windows में
+          InScript लेआउट सक्रिय किए बिना भी टाइपिंग सही काम करती है।{" "}
+          <button onClick={() => navigate("/keyboard-chart")} className="underline">
+            {t("practice_windows_setup")}
+          </button>
+        </p>
+      )}
 
       {snapshot.completed && (
         <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-green-800 dark:border-green-900 dark:bg-green-900/20 dark:text-green-300">
           <p className="font-semibold">
             {metrics.grossWpm >= lesson.passWpm && metrics.accuracy >= lesson.passAccuracy
-              ? "Lesson passed! Great job."
-              : "Lesson complete. Try again to hit the pass targets."}
+              ? t("practice_lesson_passed")
+              : t("practice_lesson_retry")}
           </p>
           <button
-            onClick={() => navigate("/learn")}
-            className="mt-2 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+            onClick={goToNextExercise}
+            className="mt-2 flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
           >
-            Back to Learn
+            {isLastExercise ? t("practice_back_to_learn") : t("practice_next_exercise")}
+            <ArrowRight size={14} />
           </button>
         </div>
       )}
 
       <VirtualKeyboard
+        rows={rows}
         activeCode={activeKeyDef?.code ?? null}
         pressedCode={pressedCode}
         pressedCorrect={pressedCorrect}
         shiftActive={shiftActive}
+        shiftRequired={shiftRequired}
         showFingerColors
+        devanagari={isHindi}
+        physicalHints={isHindi ? ENGLISH_HINTS : undefined}
       />
       <HandGuide activeFinger={activeKeyDef?.finger ?? null} />
     </div>

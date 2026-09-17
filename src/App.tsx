@@ -8,6 +8,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { LearnPage } from "./pages/LearnPage";
 import { LessonPracticePage } from "./pages/LessonPracticePage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { KeyboardChartPage } from "./pages/KeyboardChartPage";
 import { RoadmapPage } from "./pages/RoadmapPage";
 import { getProfile } from "./services/profileService";
 
@@ -45,6 +46,7 @@ export default function App() {
                 <Route path="/learn" element={<LearnPage />} />
                 <Route path="/practice" element={<LearnPage />} />
                 <Route path="/practice/:lessonId" element={<LessonPracticePage />} />
+                <Route path="/keyboard-chart" element={<KeyboardChartPage />} />
                 <Route
                   path="/test"
                   element={

@@ -101,6 +101,7 @@ function NewProfileForm({
 }) {
   const [name, setName] = useState("");
   const [typingLanguage, setTypingLanguage] = useState<"en" | "hi">("en");
+  const [interfaceLang, setInterfaceLang] = useState<"en" | "hi">("en");
   const [skillLevel, setSkillLevel] = useState<SkillLevel>("beginner");
 
   const submit = async (e: React.FormEvent) => {
@@ -108,7 +109,7 @@ function NewProfileForm({
     if (!name.trim()) return;
     const profile = await createProfile({
       displayName: name.trim(),
-      preferredInterfaceLanguage: typingLanguage,
+      preferredInterfaceLanguage: interfaceLang,
       preferredTypingLanguage: typingLanguage,
       preferredLayout: typingLanguage === "hi" ? "unicode-inscript" : "en-qwerty",
       skillLevel,
@@ -132,7 +133,7 @@ function NewProfileForm({
           placeholder="e.g. Priya"
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="mb-1 block text-sm font-medium">Typing language</label>
           <select
@@ -142,6 +143,17 @@ function NewProfileForm({
           >
             <option value="en">English</option>
             <option value="hi">Hindi</option>
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium">Interface language</label>
+          <select
+            value={interfaceLang}
+            onChange={(e) => setInterfaceLang(e.target.value as "en" | "hi")}
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+          >
+            <option value="en">English</option>
+            <option value="hi">हिन्दी</option>
           </select>
         </div>
         <div>

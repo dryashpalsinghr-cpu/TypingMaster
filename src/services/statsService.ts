@@ -1,5 +1,6 @@
 import { db } from "../db/database";
-import type { AttemptResult } from "../types";
+import type { AttemptResult, TypingLanguage } from "../types";
+import { getLessonsForLanguage } from "../data/lessons";
 
 export interface DashboardStats {
   avgWpm: number;
@@ -93,13 +94,40 @@ export async function getDashboardStats(profileId: number): Promise<DashboardSta
   };
 }
 
+export interface LanguageProgress {
+  language: TypingLanguage;
+  lessonsCompleted: number;
+  totalLessons: number;
+  avgWpm: number;
+  avgAccuracy: number;
+}
+
+export async function getLanguageProgress(profileId: number, language: TypingLanguage): Promise<LanguageProgress> {
+  const attempts = await db.attempts
+    .where("profileId")
+    .equals(profileId)
+    .filter((a) => a.language === language)
+    .toArray();
+
+  const lessonAttempts = attempts.filter((a) => a.kind === "lesson" && a.completed);
+  const completedLessonIds = new Set(lessonAttempts.filter((a) => a.passed).map((a) => a.lessonId));
+
+  return {
+    language,
+    lessonsCompleted: completedLessonIds.size,
+    totalLessons: getLessonsForLanguage(language).length,
+    avgWpm: attempts.length ? Math.round(attempts.reduce((s, a) => s + a.netWpm, 0) / attempts.length) : 0,
+    avgAccuracy: attempts.length ? Math.round(attempts.reduce((s, a) => s + a.accuracy, 0) / attempts.length) : 0,
+  };
+}
+
 export async function saveAttempt(attempt: AttemptResult): Promise<number> {
   const id = await db.attempts.add(attempt);
   const todayKey = toDateKey(attempt.dateTime);
   const existing = await db.dailyProgress
     .where("profileId")
     .equals(attempt.profileId)
-    .filter((d) => d.date === todayKey)
+    .filter((d) => d.date === todayKey && d.language === attempt.language)
     .first();
 
   if (existing) {
@@ -112,6 +140,7 @@ export async function saveAttempt(attempt: AttemptResult): Promise<number> {
   } else {
     await db.dailyProgress.add({
       profileId: attempt.profileId,
+      language: attempt.language,
       date: todayKey,
       minutesPracticed: attempt.durationSec / 60,
       lessonsCompleted: attempt.kind === "lesson" && attempt.completed ? 1 : 0,

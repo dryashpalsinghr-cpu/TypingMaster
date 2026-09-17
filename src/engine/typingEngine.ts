@@ -2,10 +2,21 @@
 // Grapheme-aware: uses Intl.Segmenter when available so Hindi matra/conjunct
 // clusters are treated as one visual unit instead of being split into raw
 // UTF-16 code units.
+//
+// Devanagari note: one visual grapheme cluster (e.g. "कि", "क्ष") is often
+// typed as MULTIPLE physical keystrokes (consonant, then matra/virama/next
+// consonant), each producing one Unicode code point. So a "cell" here can
+// require more than one typeCharacter() call to complete. Each cell keeps
+// a typedBuffer that accumulates code points and is compared against the
+// expected cluster as a prefix match while typing is in progress, and as
+// an exact match once the cluster is complete. English text is just the
+// special case where every cluster is a single code point, so this is
+// fully backward compatible with the original single-keystroke behaviour.
 
 export interface CharacterState {
   expected: string;
   typed: string | null;
+  typedBuffer: string;
   status: "pending" | "correct" | "incorrect" | "corrected";
   firstTypedAtMs: number | null;
 }
@@ -51,9 +62,10 @@ export class TypingEngine {
   constructor(expectedText: string, config: EngineConfig) {
     this.config = config;
     this.state = {
-      characters: segmentGraphemes(expectedText).map((ch) => ({
+      characters: segmentGraphemes(expectedText.normalize("NFC")).map((ch) => ({
         expected: ch,
         typed: null,
+        typedBuffer: "",
         status: "pending",
         firstTypedAtMs: null,
       })),
@@ -72,8 +84,15 @@ export class TypingEngine {
     return this.state;
   }
 
-  /** Feed one typed grapheme forward. Returns the updated snapshot. */
-  typeCharacter(char: string, nowMs: number = performance.now()): EngineSnapshot {
+  /**
+   * Feed one typed Unicode code point (one physical keystroke's output)
+   * forward into the current cell's buffer. A cell only advances once its
+   * buffer exactly matches the expected cluster - until then, as long as
+   * the buffer is still a valid prefix of the expected cluster, the cell
+   * stays "pending" (this is the normal, correct path for a multi-key
+   * Devanagari matra/conjunct sequence). Returns the updated snapshot.
+   */
+  typeCharacter(input: string, nowMs: number = performance.now()): EngineSnapshot {
     if (this.state.completed) return this.state;
     if (this.state.startedAt === null) this.state.startedAt = nowMs;
 
@@ -81,21 +100,30 @@ export class TypingEngine {
     const cell = this.state.characters[idx];
     if (!cell) return this.state;
 
+    const char = input.normalize("NFC");
     this.state.totalKeystrokes += 1;
-    const isCorrect = char === cell.expected;
-    cell.typed = char;
+    cell.typedBuffer += char;
+    cell.typed = cell.typedBuffer;
     cell.firstTypedAtMs = cell.firstTypedAtMs ?? nowMs - (this.state.startedAt ?? nowMs);
     this.keyTimings.push(nowMs);
 
-    if (isCorrect) {
+    if (cell.typedBuffer === cell.expected) {
+      // full cluster match
       cell.status = cell.status === "incorrect" ? "corrected" : "correct";
       if (cell.status === "corrected") this.state.correctedErrors += 1;
       this.state.cursor += 1;
+    } else if (cell.expected.startsWith(cell.typedBuffer)) {
+      // valid prefix of a multi-keystroke cluster - keep waiting
+      cell.status = "pending";
     } else {
-      cell.status = "incorrect";
-      this.state.uncorrectedErrors += 1;
-      if (!this.config.strictMode) {
-        // fluent mode: still advance so the drill keeps flowing
+      // mismatch
+      if (cell.status !== "incorrect") {
+        this.state.uncorrectedErrors += 1;
+        cell.status = "incorrect";
+      }
+      if (!this.config.strictMode && cell.typedBuffer.length >= cell.expected.length) {
+        // fluent mode: give up on this cluster once enough keystrokes were
+        // spent on it, so a single wrong key never blocks the drill
         this.state.cursor += 1;
       }
     }
@@ -109,22 +137,47 @@ export class TypingEngine {
   }
 
   backspace(nowMs: number = performance.now()): EngineSnapshot {
-    if (!this.config.backspaceAllowed || this.state.cursor === 0) return this.state;
+    if (!this.config.backspaceAllowed) return this.state;
+
+    const cell = this.state.characters[this.state.cursor];
+
+    if (cell && cell.typedBuffer.length > 0) {
+      // remove the last keystroke within the current (incomplete) cluster
+      this.state.backspaces += 1;
+      cell.typedBuffer = cell.typedBuffer.slice(0, -1);
+      cell.typed = cell.typedBuffer || null;
+      if (cell.status === "incorrect" && cell.expected.startsWith(cell.typedBuffer)) {
+        this.state.uncorrectedErrors = Math.max(0, this.state.uncorrectedErrors - 1);
+      }
+      cell.status = cell.typedBuffer.length === 0 ? "pending" : cell.status === "incorrect" ? "incorrect" : "pending";
+      this.state.elapsedMs = nowMs - (this.state.startedAt ?? nowMs);
+      return { ...this.state };
+    }
+
+    if (this.state.cursor === 0) return this.state;
+
+    // current cell has nothing typed yet - step back into the previous cell
     this.state.backspaces += 1;
     this.state.cursor -= 1;
-    const cell = this.state.characters[this.state.cursor];
-    if (cell.status === "incorrect") this.state.uncorrectedErrors = Math.max(0, this.state.uncorrectedErrors - 1);
-    cell.status = "pending";
-    cell.typed = null;
+    const prevCell = this.state.characters[this.state.cursor];
+    if (prevCell.status === "incorrect") {
+      this.state.uncorrectedErrors = Math.max(0, this.state.uncorrectedErrors - 1);
+    } else if (prevCell.status === "corrected") {
+      this.state.correctedErrors = Math.max(0, this.state.correctedErrors - 1);
+    }
+    prevCell.status = "pending";
+    prevCell.typed = null;
+    prevCell.typedBuffer = "";
     this.state.elapsedMs = nowMs - (this.state.startedAt ?? nowMs);
     return { ...this.state };
   }
 
   reset(expectedText: string): void {
     this.state = {
-      characters: segmentGraphemes(expectedText).map((ch) => ({
+      characters: segmentGraphemes(expectedText.normalize("NFC")).map((ch) => ({
         expected: ch,
         typed: null,
+        typedBuffer: "",
         status: "pending",
         firstTypedAtMs: null,
       })),

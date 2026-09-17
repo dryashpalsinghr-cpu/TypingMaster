@@ -1,13 +1,19 @@
-import { enQwertyRows } from "../keyboards/enQwerty";
-import type { FingerId } from "../types";
+import type { FingerId, KeyDefinition } from "../types";
 import clsx from "clsx";
 
 interface VirtualKeyboardProps {
+  rows: KeyDefinition[][];
   activeCode: string | null;
   pressedCode: string | null;
   pressedCorrect: boolean | null;
   shiftActive: boolean;
+  shiftRequired: boolean;
   showFingerColors: boolean;
+  /** When set, shows the English key's normal label as a small hint under
+   * the Hindi glyph - spec section 11: "option to show or hide English
+   * physical-key hints". Pass the base English layout keyed by code. */
+  physicalHints?: Map<string, string>;
+  devanagari?: boolean;
 }
 
 const fingerBg: Record<FingerId, string> = {
@@ -24,11 +30,15 @@ const fingerBg: Record<FingerId, string> = {
 };
 
 export function VirtualKeyboard({
+  rows,
   activeCode,
   pressedCode,
   pressedCorrect,
   shiftActive,
+  shiftRequired,
   showFingerColors,
+  physicalHints,
+  devanagari,
 }: VirtualKeyboardProps) {
   return (
     <div
@@ -36,28 +46,35 @@ export function VirtualKeyboard({
       style={{ perspective: "800px" }}
       aria-label="Virtual keyboard"
     >
-      {enQwertyRows.map((row, ri) => (
+      {rows.map((row, ri) => (
         <div key={ri} className="mb-1.5 flex gap-1.5 last:mb-0">
           {row.map((key) => {
             const isActive = key.code === activeCode;
             const isPressed = key.code === pressedCode;
             const isShiftKey = key.code === "ShiftLeft" || key.code === "ShiftRight";
+            const hint = physicalHints?.get(key.code);
             return (
               <div
                 key={key.code}
                 className={clsx(
-                  "flex h-11 items-center justify-center rounded-lg border text-xs font-medium",
+                  "relative flex h-11 flex-col items-center justify-center rounded-lg border text-xs font-medium",
                   "border-slate-300 bg-white shadow-[0_3px_0_rgba(0,0,0,0.15)] transition-transform duration-75 dark:border-slate-600 dark:bg-slate-700",
                   showFingerColors && !key.isModifier && fingerBg[key.finger],
                   isActive && "ring-2 ring-brand-400",
                   isPressed && pressedCorrect === true && "!bg-green-400 !text-white",
                   isPressed && pressedCorrect === false && "!bg-red-400 !text-white",
                   isPressed && "translate-y-[2px] shadow-none",
-                  isShiftKey && shiftActive && "ring-2 ring-amber-400"
+                  isShiftKey && (shiftActive || shiftRequired) && "ring-2 ring-amber-400",
+                  devanagari && !key.isModifier && "font-devanagari text-sm"
                 )}
                 style={{ flex: key.width ?? 1 }}
               >
-                {key.code === "Space" ? "" : shiftActive && key.shiftLabel ? key.shiftLabel : key.normalLabel}
+                <span>{key.code === "Space" ? "" : shiftActive && key.shiftLabel ? key.shiftLabel : key.normalLabel}</span>
+                {hint && !key.isModifier && (
+                  <span className="absolute bottom-0.5 right-1 text-[8px] font-normal text-slate-400 dark:text-slate-500">
+                    {hint}
+                  </span>
+                )}
               </div>
             );
           })}

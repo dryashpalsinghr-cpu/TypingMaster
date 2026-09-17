@@ -95,6 +95,9 @@ export interface AppSettings {
   minWpm: number;
   lockNextLesson: boolean;
   breakReminderMinutes: number | null;
+  // Hindi-specific (spec section 21 "Hindi" settings group)
+  showPhysicalKeyHints: boolean; // show the underlying English key label on Hindi virtual keys
+  hindiNormalization: "NFC" | "none";
 }
 
 export type ExerciseType =
@@ -109,6 +112,13 @@ export type ExerciseType =
   | "speed-drill"
   | "lesson-exam";
 
+export interface LessonExercise {
+  type: ExerciseType;
+  text: string;
+  label?: string;
+  labelHi?: string;
+}
+
 export interface Lesson {
   id: string;
   courseId: string;
@@ -118,10 +128,21 @@ export interface Lesson {
   title: string;
   titleHi?: string;
   description: string;
+  descriptionHi?: string;
   newKeys: string[];
   requiredKeys: string[];
   exerciseType: ExerciseType;
   practiceText: string;
+  /**
+   * Optional additional exercises within the same lesson (spec requires at
+   * least a key drill + word drill + sentence/paragraph drill per Hindi
+   * lesson). When present, the practice screen steps through
+   * [{type: exerciseType, text: practiceText}, ...exercises] in order and
+   * only advances the profile's lastLessonId once every exercise in the
+   * lesson is complete. English lessons from Phase 2 omit this field and
+   * keep behaving exactly as a single-exercise lesson.
+   */
+  exercises?: LessonExercise[];
   suggestedDurationSec: number;
   passWpm: number;
   passAccuracy: number;
@@ -173,6 +194,7 @@ export interface Certificate {
 export interface DailyProgress {
   id?: number;
   profileId: number;
+  language: TypingLanguage;
   date: string; // yyyy-mm-dd
   minutesPracticed: number;
   lessonsCompleted: number;

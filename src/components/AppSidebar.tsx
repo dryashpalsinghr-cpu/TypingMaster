@@ -11,24 +11,29 @@ import {
   Award,
   Users,
   Settings as SettingsIcon,
+  Grid3x3,
 } from "lucide-react";
 import clsx from "clsx";
+import { useT } from "../hooks/useTranslation";
+import type { StringKey } from "../i18n/strings";
 
-const NAV_ITEMS = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/learn", label: "Learn", icon: BookOpen },
-  { to: "/practice", label: "Practice", icon: Keyboard },
-  { to: "/test", label: "Typing Test", icon: Timer },
-  { to: "/exam", label: "Exam Mode", icon: GraduationCap },
-  { to: "/review", label: "Personalized Review", icon: Target },
-  { to: "/games", label: "Games", icon: Gamepad2 },
-  { to: "/statistics", label: "Statistics", icon: BarChart3 },
-  { to: "/certificates", label: "Certificates", icon: Award },
-  { to: "/profiles", label: "Profiles", icon: Users },
-  { to: "/settings", label: "Settings", icon: SettingsIcon },
+const NAV_ITEMS: { to: string; key: StringKey; icon: typeof LayoutDashboard }[] = [
+  { to: "/dashboard", key: "nav_dashboard", icon: LayoutDashboard },
+  { to: "/learn", key: "nav_learn", icon: BookOpen },
+  { to: "/practice", key: "nav_practice", icon: Keyboard },
+  { to: "/keyboard-chart", key: "nav_keyboard_chart", icon: Grid3x3 },
+  { to: "/test", key: "nav_test", icon: Timer },
+  { to: "/exam", key: "nav_exam", icon: GraduationCap },
+  { to: "/review", key: "nav_review", icon: Target },
+  { to: "/games", key: "nav_games", icon: Gamepad2 },
+  { to: "/statistics", key: "nav_statistics", icon: BarChart3 },
+  { to: "/certificates", key: "nav_certificates", icon: Award },
+  { to: "/profiles", key: "nav_profiles", icon: Users },
+  { to: "/settings", key: "nav_settings", icon: SettingsIcon },
 ];
 
 export function AppSidebar() {
+  const t = useT();
   return (
     <aside className="hidden w-60 shrink-0 border-r border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 md:block">
       <div className="mb-6 flex items-center gap-2 px-2">
@@ -36,7 +41,7 @@ export function AppSidebar() {
         <span className="text-lg font-semibold">TypeGuru Pro</span>
       </div>
       <nav className="space-y-1">
-        {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+        {NAV_ITEMS.map(({ to, key, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -50,7 +55,7 @@ export function AppSidebar() {
             }
           >
             <Icon size={18} />
-            {label}
+            {t(key)}
           </NavLink>
         ))}
       </nav>

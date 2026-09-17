@@ -1,10 +1,21 @@
 import clsx from "clsx";
 import type { CharacterState } from "../engine/typingEngine";
 
-export function PracticeText({ characters, cursor }: { characters: CharacterState[]; cursor: number }) {
+export function PracticeText({
+  characters,
+  cursor,
+  devanagari,
+}: {
+  characters: CharacterState[];
+  cursor: number;
+  devanagari?: boolean;
+}) {
   return (
     <div
-      className="rounded-xl bg-white p-6 font-mono text-2xl leading-relaxed tracking-wide shadow dark:bg-slate-800"
+      className={clsx(
+        "rounded-xl bg-white p-6 text-2xl leading-relaxed tracking-wide shadow dark:bg-slate-800",
+        devanagari ? "font-devanagari" : "font-mono"
+      )}
       style={{ wordBreak: "break-word" }}
     >
       {characters.map((c, i) => (

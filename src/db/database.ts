@@ -39,6 +39,24 @@ class TypeGuruDB extends Dexie {
       certificates: "++id, profileId, attemptId, certificateCode",
       dailyProgress: "++id, profileId, date",
     });
+
+    // v2 - Phase 3 (Hindi Unicode InScript): dailyProgress now tracks
+    // English and Hindi progress as separate rows per day, so the
+    // dashboard can show per-language completion instead of one blended
+    // number. Existing rows (all English-only, from Phase 2) are migrated
+    // in place rather than dropped.
+    this.version(2)
+      .stores({
+        dailyProgress: "++id, profileId, date, language, [profileId+language]",
+      })
+      .upgrade(async (tx) => {
+        await tx
+          .table("dailyProgress")
+          .toCollection()
+          .modify((row: { language?: string }) => {
+            row.language ??= "en";
+          });
+      });
   }
 }
 
@@ -65,4 +83,6 @@ export const DEFAULT_SETTINGS: Omit<AppSettings, "id" | "profileId"> = {
   minWpm: 20,
   lockNextLesson: false,
   breakReminderMinutes: 30,
+  showPhysicalKeyHints: true,
+  hindiNormalization: "NFC",
 };
