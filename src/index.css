@@ -1,0 +1,54 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+.dark {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+  font-family: "Noto Sans", sans-serif;
+}
+
+[lang="hi"] body,
+.font-devanagari {
+  font-family: "Noto Sans Devanagari", "Noto Sans", sans-serif;
+}
+
+/* Kruti Dev legacy font - administrator must supply a licensed TTF/WOFF2.
+   Place the file at /public/fonts/krutidev010.woff2 and it will be picked up. */
+@font-face {
+  font-family: "KrutiDev010";
+  src: url("/fonts/krutidev010.woff2") format("woff2");
+  font-display: swap;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 dark:bg-slate-700 rounded-full;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
