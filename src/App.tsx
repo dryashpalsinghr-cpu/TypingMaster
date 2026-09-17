@@ -11,7 +11,6 @@ import { LessonPracticePage } from "./pages/LessonPracticePage";
 import { TypingTestPage } from "./pages/TypingTestPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { KeyboardChartPage } from "./pages/KeyboardChartPage";
-import { RoadmapPage } from "./pages/RoadmapPage";
 import { MappingValidatorPage } from "./pages/MappingValidatorPage";
 import { FontSetupPage } from "./pages/FontSetupPage";
 import { ConverterPage } from "./pages/ConverterPage";
