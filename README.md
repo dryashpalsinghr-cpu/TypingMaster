@@ -3,20 +3,22 @@
 An original, offline-first Hindi + English typing tutor (React + TypeScript + Vite + Dexie/IndexedDB). Not affiliated with or copied from any commercial typing product.
 
 ## Version
-0.4.0 - Phase 4: Kruti Dev 010 & Remington GAIL (legacy encodings).
+0.5.0 - Phase 5: Government Exam Mode & Certificates.
 
-## Phase 4 summary
-- Legacy font-based encodings (Kruti Dev 010, Remington GAIL) modeled as first-class layouts.
-- Encoding adapters separate Unicode typing from legacy font-byte typing; Unicode attempts are never reinterpreted as legacy.
-- **Font Setup** page: detect a locally installed, user-licensed font. The copyrighted font is never bundled or downloaded.
-- **Keyboard Mapping Validator** (admin, optional PIN): add per-key overrides stored in IndexedDB, import/export JSON, duplicate/missing detection, completion %. Built-in mappings are immutable and ship empty + unverified.
-- **Kruti Dev <-> Unicode Converter** (Beta): uses only verified mapping pairs, longest-match-first, preserves unmatched input.
-- Verified-only lessons: legacy lessons stay locked until mappings are verified. Nothing is guessed.
-- Language/layout choice persists per profile.
+## Phase 5 summary
+- **Exam Mode** (`/exam`): editable SSC / RRB / CPCT practice templates - duration, target WPM, target KDPH, minimum accuracy, backspace policy, and focus-loss limit are all editable. Create, duplicate, edit, and delete your own templates.
+- **Focus-loss detection**: leaving the test window (tab switch / blur) is counted and warned about, mirroring real exam conditions.
+- **KDPH**: Key Depressions Per Hour is computed alongside Gross/Net WPM and accuracy.
+- **Certificates** (`/certificates`): printable certificates (Print / Save as PDF) generated ONLY from your real passed results. Clearly marked as practice certificates, not official documents.
+- Exam data is stored in a separate IndexedDB database, so the main schema is untouched.
 
 ## Honesty notes
-- 0 Kruti Dev and 0 Remington keys are verified out of the box - by design.
+- Exam passages are original practice text; target numbers are editable illustrative defaults.
+- Certificates are practice certificates, not official government documents.
 - No build, typecheck, or Windows installer was produced in the authoring sandbox (no network). See BUILD-STATUS.txt.
+
+## Apply order
+Apply the Phase 4 update first, then Phase 5. The new App.tsx references Phase 4 pages.
 
 ## Develop
 ```
@@ -25,6 +27,3 @@ npm run dev
 npm run typecheck
 npm run build
 ```
-
-## Windows EXE
-Push to GitHub and run the "Build Windows EXE" workflow; download the TypeGuruPro-Windows artifact (unsigned).

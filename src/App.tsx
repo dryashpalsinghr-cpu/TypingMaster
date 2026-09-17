@@ -14,6 +14,8 @@ import { RoadmapPage } from "./pages/RoadmapPage";
 import { MappingValidatorPage } from "./pages/MappingValidatorPage";
 import { FontSetupPage } from "./pages/FontSetupPage";
 import { ConverterPage } from "./pages/ConverterPage";
+import { ExamPage } from "./pages/ExamPage";
+import { CertificatesPage } from "./pages/CertificatesPage";
 import { getProfile } from "./services/profileService";
 function ProfileRestorer({ children }: { children: React.ReactNode }) {
   const { setActiveProfile } = useProfileContext();
@@ -45,11 +47,11 @@ export default function App() {
                 <Route path="/mapping-validator" element={<MappingValidatorPage />} />
                 <Route path="/converter" element={<ConverterPage />} />
                 <Route path="/test" element={<TypingTestPage />} />
-                <Route path="/exam" element={<RoadmapPage title="Government Exam Mode" phase="Phase 5" description="Editable SSC/RRB/CPCT exam templates with focus-loss warnings and KDPH targets." />} />
+                <Route path="/exam" element={<ExamPage />} />
                 <Route path="/review" element={<RoadmapPage title="Personalized Review" phase="Phase 6" description="Weak-key, slow-key, and difficult-bigram practice generated from your real attempt history." />} />
                 <Route path="/games" element={<RoadmapPage title="Typing Games" phase="Phase 7" description="Letter Bubbles, Word Runner, and Key Defender - original games, no assets copied from any commercial product." />} />
                 <Route path="/statistics" element={<RoadmapPage title="Statistics" phase="Phase 6" description="Full keyboard heatmap, finger performance, and bigram analysis charts." />} />
-                <Route path="/certificates" element={<RoadmapPage title="Certificates" phase="Phase 5" description="Printable practice-performance certificates generated from real test results." />} />
+                <Route path="/certificates" element={<CertificatesPage />} />
                 <Route path="/profiles" element={<ProfileSelectPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>
