@@ -1,6 +1,7 @@
 import { Outlet, Navigate } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
+import { BackgroundRotator } from "./BackgroundRotator";
 import { useProfileContext } from "../contexts/ProfileContext";
 
 export function AppLayout() {
@@ -9,7 +10,8 @@ export function AppLayout() {
   if (!activeProfile) return <Navigate to="/" replace />;
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-screen">
+      <BackgroundRotator />
       <AppSidebar />
       <div className="flex flex-1 flex-col">
         <AppHeader />
