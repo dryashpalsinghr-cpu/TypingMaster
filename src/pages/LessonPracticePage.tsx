@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { RotateCcw, ArrowRight } from "lucide-react";
+import { RotateCcw } from "lucide-react";
 import { getLessonById, getLessonExercises } from "../data/lessons";
 import { getKeyboardLayout, getKeyboardRows } from "../keyboards";
 import { enQwertyLayout } from "../keyboards/enQwerty";
@@ -10,6 +10,7 @@ import { useT } from "../hooks/useTranslation";
 import { PracticeText } from "../components/PracticeText";
 import { VirtualKeyboard } from "../components/VirtualKeyboard";
 import { HandGuide } from "../components/HandGuide";
+import { SessionSidePanel, formatClock } from "../components/practice/SessionSidePanel";
 import { useProfileContext } from "../contexts/ProfileContext";
 import { useThemeContext } from "../contexts/ThemeContext";
 import { saveAttempt } from "../services/statsService";
@@ -155,8 +156,10 @@ export function LessonPracticePage() {
     else navigate("/learn");
   };
 
+  const progressRatio = snapshot.characters.length ? snapshot.cursor / snapshot.characters.length : 0;
+
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-6">
+    <div className="mx-auto max-w-6xl space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
           <div className="text-xs font-medium uppercase text-brand-600 font-devanagari">
@@ -184,13 +187,8 @@ export function LessonPracticePage() {
         <MetricPill label={t("practice_net_wpm")} value={Math.round(metrics.netWpm)} />
         <MetricPill label={t("practice_accuracy")} value={`${metrics.accuracy}%`} />
         <MetricPill label={t("practice_errors")} value={snapshot.uncorrectedErrors} />
-        <MetricPill
-          label={t("practice_progress")}
-          value={`${Math.round((snapshot.cursor / snapshot.characters.length) * 100)}%`}
-        />
+        <MetricPill label={t("practice_progress")} value={`${Math.round(progressRatio * 100)}%`} />
       </div>
-
-      <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} />
 
       {isHindi && (
         <p className="text-xs text-slate-400 font-devanagari">
@@ -209,28 +207,38 @@ export function LessonPracticePage() {
               ? t("practice_lesson_passed")
               : t("practice_lesson_retry")}
           </p>
-          <button
-            onClick={goToNextExercise}
-            className="mt-2 flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-          >
-            {isLastExercise ? t("practice_back_to_learn") : t("practice_next_exercise")}
-            <ArrowRight size={14} />
-          </button>
         </div>
       )}
 
-      <VirtualKeyboard
-        rows={rows}
-        activeCode={activeKeyDef?.code ?? null}
-        pressedCode={pressedCode}
-        pressedCorrect={pressedCorrect}
-        shiftActive={shiftActive}
-        shiftRequired={shiftRequired}
-        showFingerColors
-        devanagari={isHindi}
-        physicalHints={isHindi ? ENGLISH_HINTS : undefined}
-      />
-      <HandGuide activeFinger={activeKeyDef?.finger ?? null} />
+      <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
+        <div className="space-y-4">
+          <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} />
+          <VirtualKeyboard
+            rows={rows}
+            activeCode={activeKeyDef?.code ?? null}
+            pressedCode={pressedCode}
+            pressedCorrect={pressedCorrect}
+            shiftActive={shiftActive}
+            shiftRequired={shiftRequired}
+            showFingerColors
+            devanagari={isHindi}
+            physicalHints={isHindi ? ENGLISH_HINTS : undefined}
+          />
+          <HandGuide activeFinger={activeKeyDef?.finger ?? null} />
+        </div>
+
+        <SessionSidePanel
+          progressLabel={t("session_progress")}
+          progressRatio={progressRatio}
+          timeLabel={t("session_time")}
+          timeValue={formatClock(snapshot.elapsedMs / 1000)}
+          primaryLabel={isLastExercise ? t("practice_back_to_learn") : t("session_next")}
+          primaryDisabled={!snapshot.completed}
+          onPrimary={goToNextExercise}
+          secondaryLabel={t("session_cancel")}
+          onSecondary={() => navigate("/learn")}
+        />
+      </div>
     </div>
   );
 }

@@ -101,6 +101,44 @@ export const strings = {
     en: "The Kruti Dev 010 font has not been installed by the administrator yet.",
     hi: "प्रशासक द्वारा अभी तक Kruti Dev 010 फ़ॉन्ट इंस्टॉल नहीं किया गया है।",
   },
+
+  // Shared practice/test sidebar
+  session_progress: { en: "Your Progress", hi: "आपकी प्रगति" },
+  session_time: { en: "Time", hi: "समय" },
+  session_time_left: { en: "Time Left", hi: "शेष समय" },
+  session_next: { en: "Next", hi: "अगला" },
+  session_cancel: { en: "Cancel", hi: "रद्द करें" },
+  session_finish: { en: "Finish Test", hi: "टेस्ट समाप्त करें" },
+
+  // Typing Test
+  test_title: { en: "Typing Test", hi: "टाइपिंग टेस्ट" },
+  test_subtitle: {
+    en: "Timed test with WPM, accuracy and a pass/fail report - practice exactly like your exam.",
+    hi: "समय-आधारित टेस्ट जिसमें WPM, सटीकता और पास/फेल रिपोर्ट मिलती है - बिल्कुल अपनी परीक्षा जैसा अभ्यास करें।",
+  },
+  test_language: { en: "Language", hi: "भाषा" },
+  test_duration: { en: "Duration", hi: "अवधि" },
+  test_passage: { en: "Test Text", hi: "टेस्ट टेक्स्ट" },
+  test_target_wpm: { en: "Target WPM (optional)", hi: "लक्ष्य WPM (वैकल्पिक)" },
+  test_target_accuracy: { en: "Target Accuracy % (optional)", hi: "लक्ष्य सटीकता % (वैकल्पिक)" },
+  test_start: { en: "Start Test", hi: "टेस्ट शुरू करें" },
+  test_minutes: { en: "min", hi: "मिनट" },
+  test_words: { en: "words", hi: "शब्द" },
+  test_finished_early: {
+    en: "Full passage typed before time ran out - test ended automatically.",
+    hi: "समय समाप्त होने से पहले ही पूरा टेक्स्ट टाइप हो गया - टेस्ट अपने आप समाप्त हो गया।",
+  },
+  test_result_title: { en: "Test Result", hi: "टेस्ट परिणाम" },
+  test_result_pass: { en: "PASS - meets your target", hi: "पास - आपके लक्ष्य के अनुसार" },
+  test_result_fail: { en: "Below target - keep practicing", hi: "लक्ष्य से कम - अभ्यास जारी रखें" },
+  test_gross_wpm: { en: "Gross WPM", hi: "सकल WPM" },
+  test_net_wpm: { en: "Net WPM", hi: "निवल WPM" },
+  test_accuracy: { en: "Accuracy", hi: "सटीकता" },
+  test_errors: { en: "Uncorrected Errors", hi: "अशुद्धियाँ" },
+  test_duration_used: { en: "Duration", hi: "अवधि" },
+  test_retry: { en: "Retake Test", hi: "फिर से टेस्ट दें" },
+  test_new: { en: "New Test", hi: "नया टेस्ट" },
+  test_saved: { en: "Result saved to your profile.", hi: "परिणाम आपकी प्रोफ़ाइल में सहेज दिया गया।" },
 } as const;
 
 export type StringKey = keyof typeof strings;

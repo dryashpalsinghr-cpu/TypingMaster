@@ -7,6 +7,7 @@ import { ProfileSelectPage } from "./pages/ProfileSelectPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LearnPage } from "./pages/LearnPage";
 import { LessonPracticePage } from "./pages/LessonPracticePage";
+import { TypingTestPage } from "./pages/TypingTestPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { KeyboardChartPage } from "./pages/KeyboardChartPage";
 import { RoadmapPage } from "./pages/RoadmapPage";
@@ -47,16 +48,7 @@ export default function App() {
                 <Route path="/practice" element={<LearnPage />} />
                 <Route path="/practice/:lessonId" element={<LessonPracticePage />} />
                 <Route path="/keyboard-chart" element={<KeyboardChartPage />} />
-                <Route
-                  path="/test"
-                  element={
-                    <RoadmapPage
-                      title="Typing Test"
-                      phase="Phase 5"
-                      description="Configurable timed tests (1/2/5/10/15/30/60 min), custom text import, and full result reports."
-                    />
-                  }
-                />
+                <Route path="/test" element={<TypingTestPage />} />
                 <Route
                   path="/exam"
                   element={
