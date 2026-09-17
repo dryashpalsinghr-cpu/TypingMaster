@@ -16,6 +16,8 @@ import { FontSetupPage } from "./pages/FontSetupPage";
 import { ConverterPage } from "./pages/ConverterPage";
 import { ExamPage } from "./pages/ExamPage";
 import { CertificatesPage } from "./pages/CertificatesPage";
+import { StatisticsPage } from "./pages/StatisticsPage";
+import { ReviewPage } from "./pages/ReviewPage";
 import { getProfile } from "./services/profileService";
 function ProfileRestorer({ children }: { children: React.ReactNode }) {
   const { setActiveProfile } = useProfileContext();
@@ -48,9 +50,9 @@ export default function App() {
                 <Route path="/converter" element={<ConverterPage />} />
                 <Route path="/test" element={<TypingTestPage />} />
                 <Route path="/exam" element={<ExamPage />} />
-                <Route path="/review" element={<RoadmapPage title="Personalized Review" phase="Phase 6" description="Weak-key, slow-key, and difficult-bigram practice generated from your real attempt history." />} />
+                <Route path="/review" element={<ReviewPage />} />
                 <Route path="/games" element={<RoadmapPage title="Typing Games" phase="Phase 7" description="Letter Bubbles, Word Runner, and Key Defender - original games, no assets copied from any commercial product." />} />
-                <Route path="/statistics" element={<RoadmapPage title="Statistics" phase="Phase 6" description="Full keyboard heatmap, finger performance, and bigram analysis charts." />} />
+                <Route path="/statistics" element={<StatisticsPage />} />
                 <Route path="/certificates" element={<CertificatesPage />} />
                 <Route path="/profiles" element={<ProfileSelectPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
