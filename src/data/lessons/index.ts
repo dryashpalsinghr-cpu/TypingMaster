@@ -1,4 +1,4 @@
-import type { Course, Lesson, TypingLanguage, KeyboardLayoutId } from "../../types";
+import type { Course, Lesson, LessonExercise, TypingLanguage, KeyboardLayoutId } from "../../types";
 import { englishBeginnerCourse, englishBeginnerLessons } from "./englishBeginner";
 import { hindiBeginnerCourse, hindiBeginnerLessons } from "./hindiInscriptBeginner";
 import { krutiDevBeginnerCourse, krutiDevBeginnerLessons } from "./krutiDevBeginner";
@@ -10,6 +10,10 @@ export function getLessonsForLayout(layout: KeyboardLayoutId): Lesson[] { return
 export function hasLessonsForLayout(layout: KeyboardLayoutId): boolean { return getLessonsForLayout(layout).length > 0; }
 export function getCourseForLanguage(language: TypingLanguage): Course | undefined { return allCourses.find((c) => c.language === language); }
 export function getLessonById(id: string | undefined): Lesson | undefined { return allLessons.find((l) => l.id === id); }
+export function getLessonExercises(lesson: Lesson): LessonExercise[] {
+  if (lesson.exercises && lesson.exercises.length > 0) return lesson.exercises;
+  return [{ type: lesson.exerciseType, text: lesson.practiceText }];
+}
 export function getContinueLesson(language: TypingLanguage, lastLessonId: string | undefined): Lesson {
   const lessons = getLessonsForLanguage(language);
   const found = lastLessonId ? lessons.find((l) => l.id === lastLessonId) : undefined;

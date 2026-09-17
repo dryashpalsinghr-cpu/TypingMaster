@@ -2,7 +2,10 @@ import type { KeyboardLayoutDefinition } from "../../types";
 import type { CompareResult, TypingAdapter } from "./types";
 export class UnicodeTypingAdapter implements TypingAdapter {
   readonly encodingType = "unicode" as const;
-  constructor(readonly layout: KeyboardLayoutDefinition) {}
+  readonly layout: KeyboardLayoutDefinition;
+  constructor(layout: KeyboardLayoutDefinition) {
+    this.layout = layout;
+  }
   normalizeInput(input: string): string { return input.normalize("NFC"); }
   segmentExpectedText(text: string): string[] {
     const normalized = text.normalize("NFC");
