@@ -18,6 +18,7 @@ import { ExamPage } from "./pages/ExamPage";
 import { CertificatesPage } from "./pages/CertificatesPage";
 import { StatisticsPage } from "./pages/StatisticsPage";
 import { ReviewPage } from "./pages/ReviewPage";
+import { GamesPage } from "./pages/GamesPage";
 import { getProfile } from "./services/profileService";
 function ProfileRestorer({ children }: { children: React.ReactNode }) {
   const { setActiveProfile } = useProfileContext();
@@ -51,7 +52,7 @@ export default function App() {
                 <Route path="/test" element={<TypingTestPage />} />
                 <Route path="/exam" element={<ExamPage />} />
                 <Route path="/review" element={<ReviewPage />} />
-                <Route path="/games" element={<RoadmapPage title="Typing Games" phase="Phase 7" description="Letter Bubbles, Word Runner, and Key Defender - original games, no assets copied from any commercial product." />} />
+                <Route path="/games" element={<GamesPage />} />
                 <Route path="/statistics" element={<StatisticsPage />} />
                 <Route path="/certificates" element={<CertificatesPage />} />
                 <Route path="/profiles" element={<ProfileSelectPage />} />

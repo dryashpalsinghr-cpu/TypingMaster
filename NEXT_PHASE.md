@@ -1,13 +1,13 @@
-# Next Phase (Phase 6+)
+# Next Phase (Phase 8+)
 
-## Phase 6 - Analytics & personalized review
-- Keyboard heatmap, finger performance, bigram analysis from real attempt + exam history.
-- Weak-key / slow-key / difficult-bigram practice generators.
+## Polish & release
+- App icon, splash, and installer polish for the Windows build; consider code signing.
+- Onboarding tour for first-time users.
 
-## Phase 7 - Original typing games
-- Letter Bubbles, Word Runner, Key Defender (all original, no copied assets).
+## Data portability
+- Export / import everything (profiles, progress, exam results, analytics, scores) as a single JSON backup.
 
-## Exam mode follow-ups
-- Optional server-less result export/import (JSON).
-- Per-category leaderboards on-device.
-- Richer certificate templates and optional logo upload.
+## Games follow-ups
+- Difficulty settings and word-length filters.
+- Optional Hindi letter mode for Letter Bubbles and Key Defender.
+- On-device leaderboards across profiles.

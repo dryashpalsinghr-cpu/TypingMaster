@@ -3,22 +3,22 @@
 An original, offline-first Hindi + English typing tutor (React + TypeScript + Vite + Dexie/IndexedDB). Not affiliated with or copied from any commercial typing product.
 
 ## Version
-0.5.0 - Phase 5: Government Exam Mode & Certificates.
+0.7.0 - Phase 7: Original Typing Games.
 
-## Phase 5 summary
-- **Exam Mode** (`/exam`): editable SSC / RRB / CPCT practice templates - duration, target WPM, target KDPH, minimum accuracy, backspace policy, and focus-loss limit are all editable. Create, duplicate, edit, and delete your own templates.
-- **Focus-loss detection**: leaving the test window (tab switch / blur) is counted and warned about, mirroring real exam conditions.
-- **KDPH**: Key Depressions Per Hour is computed alongside Gross/Net WPM and accuracy.
-- **Certificates** (`/certificates`): printable certificates (Print / Save as PDF) generated ONLY from your real passed results. Clearly marked as practice certificates, not official documents.
-- Exam data is stored in a separate IndexedDB database, so the main schema is untouched.
+## Phase 7 summary
+- **Games hub** (`/games`): three original games with per-profile high scores.
+  - **Letter Bubbles**: pop falling letters by typing them; 3 misses ends the game.
+  - **Word Runner**: type running words against a 60-second clock (Hindi words when the profile language is Hindi).
+  - **Key Defender**: destroy incoming keys before they reach your base; speed ramps up.
+- Every game records real keystroke data into the Phase 6 analytics store, so your heatmap and Personalized Review keep getting better.
+- High scores are stored in a separate IndexedDB database; all earlier databases are untouched.
 
 ## Honesty notes
-- Exam passages are original practice text; target numbers are editable illustrative defaults.
-- Certificates are practice certificates, not official government documents.
+- All games are original code with no copied assets or word lists. High scores are real, never seeded.
 - No build, typecheck, or Windows installer was produced in the authoring sandbox (no network). See BUILD-STATUS.txt.
 
 ## Apply order
-Apply the Phase 4 update first, then Phase 5. The new App.tsx references Phase 4 pages.
+Apply Phase 4, then 5, then 6, then 7. The new App.tsx references pages from all prior phases, and games record into the Phase 6 analytics store.
 
 ## Develop
 ```

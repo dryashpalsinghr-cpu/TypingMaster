@@ -1,4 +1,4 @@
-# Testing - Phase 5
+# Testing - Phase 7
 
 ## Automated (run locally - not run in authoring sandbox)
 ```
@@ -8,13 +8,13 @@ npm run build
 ```
 
 ## Manual QA checklist
-1. Open Exam Mode (/exam). Built-in SSC/RRB/CPCT templates appear and are selectable.
-2. Create a new custom test; edit duration/targets/passage; Save; it appears in the list.
-3. Duplicate a built-in template; the copy is editable/deletable; built-ins are not.
-4. Start a test. Timer counts down; typing increments the key counter.
-5. Switch tabs / click away during the test; a focus-loss warning appears and the count rises; exceeding the limit shows the red warning.
-6. Submit (or let the timer end). Result shows Gross/Net WPM, accuracy, KDPH, errors, focus losses, pass/fail.
-7. Pass a test, then open Certificates (/certificates). The passed result is listed.
-8. Set a name, click Generate; a certificate renders with serial + date; Print / Save as PDF prints only the certificate.
-9. Reload the app; issued certificates and results persist (separate IndexedDB db).
-10. CPCT (Hindi) template requires a Hindi layout/font to type correctly.
+1. Open Games (/games). Three game cards show with Best: 0 on a fresh profile.
+2. Letter Bubbles: press Start; letters fall; typing the correct letter pops the lowest matching bubble and adds score.
+3. Let 3 bubbles reach the bottom; the game ends and the score is saved.
+4. Word Runner: press Start; type the shown word; correct letters turn green, wrong red; finishing a word scores its length and loads a new word.
+5. Word Runner ends at 0 seconds; score is saved. (Switch profile language to Hindi to see Hindi words.)
+6. Key Defender: press Start; keys approach the base; typing their letter destroys the nearest match.
+7. Let 3 keys reach the base; the game ends and the score is saved.
+8. Return to the hub; Best and the High scores section reflect your real results.
+9. After playing, open Statistics (/statistics); the heatmap/finger data now include keystrokes from games.
+10. Reload the app; high scores persist (separate IndexedDB db).

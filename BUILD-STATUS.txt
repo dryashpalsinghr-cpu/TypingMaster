@@ -1,25 +1,26 @@
-TypeGuru Pro - Phase 5 Build Status (v0.5.0)
+TypeGuru Pro - Phase 7 Build Status (v0.7.0)
 =============================================
-PHASE 5 = Government Exam Mode + Certificates.
+PHASE 7 = Original Typing Games (Letter Bubbles, Word Runner, Key Defender).
 WHAT WAS DONE IN THIS ENVIRONMENT:
-  - All Phase 5 source files authored (see MANIFEST.txt).
-  - Exam data uses a SEPARATE IndexedDB database ("typeguru-exam-db") so the
-    existing main database schema did NOT need risky edits.
+  - All Phase 7 source files authored (see MANIFEST.txt).
+  - Games use their OWN IndexedDB database ("typeguru-games-db") for high scores,
+    and feed real keystroke data into the Phase 6 analytics store.
 WHAT WAS **NOT** RUN HERE (honest):
   - npm ci / npm install : NOT run (no network access in this sandbox).
   - npm run typecheck     : NOT run.
   - npm run build         : NOT run.
   - Windows installer/EXE  : NOT built.
-  - App was NOT launched or smoke-tested.
+  - Games were NOT launched or play-tested.
 WHY: The build sandbox has no internet, so dependencies could not be installed
 and the TypeScript/Vite toolchain could not run. Nothing was faked.
 HONESTY NOTES:
-  - Exam templates (SSC/RRB/CPCT) are EDITABLE format presets with illustrative
-    target numbers. Passages are ORIGINAL practice text, not copied from any exam.
-  - Certificates are generated ONLY from real passed in-app results. No fake data.
-  - Certificates are practice certificates, NOT official government documents.
-APPLY ORDER: Apply the Phase 4 update first, then this Phase 5 update. The new
-App.tsx references Phase 4 pages (Font Setup, Mapping Validator, Converter).
+  - All three games are original code with no assets, art, levels, or word lists
+    copied from any commercial typing product. Word pools were written for this app.
+  - High scores are real, saved per profile; no seeded or fake scores.
+  - Games record real keystrokes into analytics, so Statistics keep improving.
+APPLY ORDER: Apply Phase 4, then 5, then 6, then this Phase 7 update. The new
+App.tsx references pages from all prior phases, and gamesService imports the
+Phase 6 analytics service (recordKeystrokes).
 HOW TO VERIFY / BUILD YOURSELF:
   1. npm ci
   2. npm run typecheck

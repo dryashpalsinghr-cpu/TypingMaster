@@ -1,35 +1,34 @@
-TypeGuru Pro - Phase 5 Update - File Manifest (v0.5.0)
+TypeGuru Pro - Phase 7 Update - File Manifest (v0.7.0)
 =======================================================
 HOW TO USE: Copy each file below to the SAME path inside your existing project,
 overwriting when a file already exists. Folder structure here matches the project.
-IMPORTANT: Apply the Phase 4 update FIRST, then this Phase 5 update - the new
-App.tsx imports Phase 4 pages (Font Setup, Mapping Validator, Converter).
+IMPORTANT: Apply Phase 4 FIRST, then 5, then 6, then this Phase 7 update. The new
+App.tsx imports pages from all prior phases, and gamesService imports the Phase 6
+analytics service (recordKeystrokes).
 After copying, run: npm ci && npm run typecheck && npm run build
 
---- NEW FILES (7) ---
-src/types/exam.ts                       Exam/result/certificate TypeScript types
-src/db/examDb.ts                        Separate Dexie DB (typeguru-exam-db); main schema untouched
-src/data/examTemplates.ts               Built-in editable SSC/RRB/CPCT presets (original passages)
-src/services/examService.ts             Templates CRUD, results, metrics (WPM/KDPH/accuracy/pass)
-src/services/certificateService.ts      Issue + list certificates from real results
-src/pages/ExamPage.tsx                  Exam Mode UI (timer, focus-loss, KDPH, editor)
-src/pages/CertificatesPage.tsx          Printable certificates from passed results
+--- NEW FILES (8) ---
+src/types/games.ts                      Game id / score / props TypeScript types
+src/db/gamesDb.ts                       Separate Dexie DB (typeguru-games-db) for high scores
+src/data/gameWords.ts                   Original English + Hindi word pools and letter helpers
+src/services/gamesService.ts            Save/read high scores; re-exports recordKeystrokes
+src/games/LetterBubbles.tsx             Falling-letter game
+src/games/WordRunner.tsx                Timed word-typing game
+src/games/KeyDefender.tsx               Defend-the-base game
+src/pages/GamesPage.tsx                 Games hub + high scores
 
 --- MODIFIED FILES / FULL OVERWRITE (1) ---
-src/App.tsx                             Routes /exam -> ExamPage, /certificates -> CertificatesPage
-                                        (includes Phase 4 routes; overwrite the Phase 4 App.tsx)
+src/App.tsx                             Route /games -> GamesPage
+                                        (includes all prior-phase routes; overwrite the Phase 6 App.tsx)
 
 --- DOCS (overwrite) ---
 README.md  PROJECT_STATUS.md  NEXT_PHASE.md  CHANGELOG.md  TESTING.md  BUILD-STATUS.txt
 
 --- ONE MANUAL EDIT (no full file, to avoid overwriting your package.json) ---
-package.json : change the "version" field to "0.5.0".
+package.json : change the "version" field to "0.7.0".
 
 NOTES:
-- Sidebar already links to /exam and /certificates from earlier phases, so no
-  sidebar change is needed.
-- Exam target numbers are EDITABLE illustrative defaults; passages are original.
-- Certificates are practice certificates, NOT official government documents, and
-  are generated only from real passed results.
-- No build/typecheck/EXE was run in the authoring sandbox (no network). See
-  BUILD-STATUS.txt.
+- Sidebar already links to /games from earlier phases, so no sidebar change is needed.
+- All games are original code; no copied assets or word lists. High scores are real.
+- Games record real keystrokes into the Phase 6 analytics store (typeguru-analytics-db).
+- No build/typecheck/EXE was run in the authoring sandbox (no network). See BUILD-STATUS.txt.
