@@ -1,144 +1,18 @@
-export type LangKey = "en" | "hi";
-
 export const strings = {
-  // Navigation
-  nav_dashboard: { en: "Dashboard", hi: "डैशबोर्ड" },
-  nav_learn: { en: "Learn", hi: "सीखें" },
-  nav_practice: { en: "Practice", hi: "अभ्यास" },
-  nav_test: { en: "Typing Test", hi: "टाइपिंग टेस्ट" },
-  nav_exam: { en: "Exam Mode", hi: "परीक्षा मोड" },
-  nav_review: { en: "Personalized Review", hi: "व्यक्तिगत समीक्षा" },
-  nav_games: { en: "Games", hi: "गेम्स" },
-  nav_statistics: { en: "Statistics", hi: "आँकड़े" },
-  nav_certificates: { en: "Certificates", hi: "प्रमाणपत्र" },
-  nav_profiles: { en: "Profiles", hi: "प्रोफ़ाइल" },
-  nav_settings: { en: "Settings", hi: "सेटिंग्स" },
-  nav_keyboard_chart: { en: "Keyboard Chart", hi: "कीबोर्ड चार्ट" },
-
-  // Header
-  header_typing_language: { en: "Typing language", hi: "टाइपिंग भाषा" },
-  header_layout: { en: "Layout", hi: "लेआउट" },
-  header_interface_language: { en: "Interface", hi: "इंटरफ़ेस" },
-
-  // Dashboard
-  dash_welcome: { en: "Welcome back", hi: "वापसी पर स्वागत है" },
-  dash_daily_goal: { en: "Daily goal", hi: "दैनिक लक्ष्य" },
-  dash_minutes: { en: "minutes", hi: "मिनट" },
-  dash_streak: { en: "Streak", hi: "लगातार दिन" },
-  dash_days: { en: "day(s)", hi: "दिन" },
-  dash_continue: { en: "Continue", hi: "जारी रखें" },
-  dash_avg_wpm: { en: "Avg WPM", hi: "औसत WPM" },
-  dash_avg_accuracy: { en: "Avg Accuracy", hi: "औसत सटीकता" },
-  dash_best_wpm: { en: "Best WPM", hi: "सर्वश्रेष्ठ WPM" },
-  dash_lessons_done: { en: "Lessons Done", hi: "पूर्ण पाठ" },
-  dash_practiced_today: { en: "Practiced Today", hi: "आज अभ्यास" },
-  dash_weekly_speed: { en: "Weekly Speed", hi: "साप्ताहिक गति" },
-  dash_weekly_accuracy: { en: "Weekly Accuracy", hi: "साप्ताहिक सटीकता" },
-  dash_weakest_keys: { en: "Weakest Keys", hi: "कमज़ोर कुंजियाँ" },
-  dash_english_progress: { en: "English Progress", hi: "अंग्रेज़ी प्रगति" },
-  dash_hindi_progress: { en: "Hindi Progress", hi: "हिन्दी प्रगति" },
-  dash_start_lesson: { en: "Start Lesson", hi: "पाठ शुरू करें" },
-  dash_one_min_test: { en: "1-Min Test", hi: "1-मिनट टेस्ट" },
-  dash_exam_test: { en: "Exam Test", hi: "परीक्षा टेस्ट" },
-  dash_weak_keys: { en: "Weak Keys", hi: "कमज़ोर कुंजियाँ" },
-  dash_keyboard_chart: { en: "Keyboard Chart", hi: "कीबोर्ड चार्ट" },
-
-  // Learn
-  learn_title: { en: "Learn", hi: "सीखें" },
-  learn_subtitle_en: {
-    en: "Structured lessons for English touch typing.",
-    hi: "अंग्रेज़ी टच टाइपिंग के लिए संरचित पाठ।",
+  en: {
+    nav_dashboard: "Dashboard", nav_learn: "Learn", nav_practice: "Practice", nav_keyboard_chart: "Keyboard Chart", nav_font_setup: "Font Setup", nav_mapping_validator: "Mapping Validator", nav_converter: "Converter", nav_test: "Typing Test", nav_exam: "Exam Mode", nav_review: "Review", nav_games: "Games", nav_statistics: "Statistics", nav_certificates: "Certificates", nav_profiles: "Profiles", nav_settings: "Settings",
+    header_typing_language: "Typing:", header_layout: "Layout:",
+    learn_title: "Learn to Type", learn_subtitle_en: "Structured English typing lessons.", learn_subtitle_hi: "Structured Hindi typing lessons.",
+    learn_legacy_locked_title: "Lessons locked for this legacy layout", learn_legacy_locked_body: "Kruti Dev and Remington GAIL lessons unlock only after their key mappings are verified. No mappings are guessed. Set up the licensed font and verify the layout to enable lessons.",
+    settings_subtitle: "Manage your preferences.", settings_legacy_section: "Legacy Hindi (Kruti Dev / Remington)", settings_legacy_desc: "Set up the licensed font, verify key mappings, and use the Beta converter.", settings_desktop_section: "Desktop App", settings_desktop_desc: "Windows packaging is built via the project build scripts and GitHub Actions.", settings_hindi_section: "Hindi Input", settings_physical_hints: "Show physical key hints", settings_normalization: "Unicode normalization",
   },
-  learn_subtitle_hi: {
-    en: "Structured lessons for Hindi InScript touch typing.",
-    hi: "हिन्दी इनस्क्रिप्ट टच टाइपिंग के लिए संरचित पाठ।",
+  hi: {
+    nav_dashboard: "डैशबोर्ड", nav_learn: "सीखें", nav_practice: "अभ्यास", nav_keyboard_chart: "कीबोर्ड चार्ट", nav_font_setup: "फ़ॉन्ट सेटअप", nav_mapping_validator: "मैपिंग वैलिडेटर", nav_converter: "कन्वर्टर", nav_test: "टाइपिंग टेस्ट", nav_exam: "परीक्षा मोड", nav_review: "समीक्षा", nav_games: "गेम", nav_statistics: "आंकड़े", nav_certificates: "प्रमाणपत्र", nav_profiles: "प्रोफ़ाइल", nav_settings: "सेटिंग्स",
+    header_typing_language: "टाइपिंग:", header_layout: "लेआउट:",
+    learn_title: "टाइप करना सीखें", learn_subtitle_en: "संरचित अंग्रेज़ी पाठ।", learn_subtitle_hi: "संरचित हिन्दी पाठ।",
+    learn_legacy_locked_title: "इस लीगेसी लेआउट के पाठ लॉक हैं", learn_legacy_locked_body: "कृति देव और रेमिंगटन गेल के पाठ तभी खुलते हैं जब उनकी की मैपिंग सत्यापित हो। कोई मैपिंग अनुमान से नहीं भरी गई।",
+    settings_subtitle: "अपनी पसंद प्रबंधित करें।", settings_legacy_section: "लीगेसी हिन्दी (कृति देव / रेमिंगटन)", settings_legacy_desc: "लाइसेंस फ़ॉन्ट सेट करें, मैपिंग सत्यापित करें।", settings_desktop_section: "डेस्कटॉप ऐप", settings_desktop_desc: "विंडोज़ पैकेजिंग बिल्ड स्क्रिप्ट से बनती है।", settings_hindi_section: "हिन्दी इनपुट", settings_physical_hints: "भौतिक की संकेत दिखाएं", settings_normalization: "यूनिकोड नॉर्मलाइज़ेशन",
   },
-
-  // Lesson practice
-  practice_restart: { en: "Restart", hi: "फिर से शुरू करें" },
-  practice_gross_wpm: { en: "Gross WPM", hi: "सकल WPM" },
-  practice_net_wpm: { en: "Net WPM", hi: "निवल WPM" },
-  practice_accuracy: { en: "Accuracy", hi: "सटीकता" },
-  practice_errors: { en: "Errors", hi: "त्रुटियाँ" },
-  practice_progress: { en: "Progress", hi: "प्रगति" },
-  practice_exercise: { en: "Exercise", hi: "अभ्यास" },
-  practice_of: { en: "of", hi: "में से" },
-  practice_next_exercise: { en: "Next Exercise", hi: "अगला अभ्यास" },
-  practice_lesson_passed: { en: "Lesson passed! Great job.", hi: "पाठ पास हो गया! बहुत बढ़िया।" },
-  practice_lesson_retry: {
-    en: "Lesson complete. Try again to hit the pass targets.",
-    hi: "पाठ पूरा हुआ। लक्ष्य तक पहुँचने के लिए फिर से प्रयास करें।",
-  },
-  practice_back_to_learn: { en: "Back to Learn", hi: "सीखें पर वापस जाएँ" },
-  practice_input_mode: { en: "Input mode", hi: "इनपुट मोड" },
-  practice_windows_setup: { en: "Windows Hindi setup", hi: "विंडोज़ हिन्दी सेटअप" },
-
-  // Settings
-  settings_title: { en: "Settings", hi: "सेटिंग्स" },
-  settings_typing_section: { en: "Typing", hi: "टाइपिंग" },
-  settings_course_section: { en: "Course", hi: "पाठ्यक्रम" },
-  settings_hindi_section: { en: "Hindi", hi: "हिन्दी" },
-  settings_desktop_section: { en: "Desktop (Tauri)", hi: "डेस्कटॉप (Tauri)" },
-  settings_data_section: { en: "Data", hi: "डेटा" },
-  settings_show_keyboard: { en: "Show virtual keyboard", hi: "वर्चुअल कीबोर्ड दिखाएँ" },
-  settings_show_hands: { en: "Show hand guide", hi: "हाथ गाइड दिखाएँ" },
-  settings_show_finger_colors: { en: "Show finger colors", hi: "उंगली के रंग दिखाएँ" },
-  settings_strict_mode: { en: "Strict mode (fix errors before moving on)", hi: "सख्त मोड (आगे बढ़ने से पहले त्रुटि सुधारें)" },
-  settings_backspace: { en: "Allow backspace", hi: "बैकस्पेस की अनुमति दें" },
-  settings_pause_focus: { en: "Pause on focus loss", hi: "फोकस खोने पर रोकें" },
-  settings_physical_hints: {
-    en: "Show physical English key hints on Hindi keys",
-    hi: "हिन्दी कुंजियों पर भौतिक अंग्रेज़ी कुंजी संकेत दिखाएँ",
-  },
-  settings_normalization: { en: "Unicode normalization", hi: "यूनिकोड सामान्यीकरण" },
-
-  // Errors (generic, expandable in later phases)
-  error_indexeddb_unavailable: {
-    en: "Local storage is unavailable in this browser. Your progress cannot be saved right now.",
-    hi: "इस ब्राउज़र में लोकल स्टोरेज उपलब्ध नहीं है। आपकी प्रगति अभी सहेजी नहीं जा सकती।",
-  },
-  error_font_missing: {
-    en: "The Kruti Dev 010 font has not been installed by the administrator yet.",
-    hi: "प्रशासक द्वारा अभी तक Kruti Dev 010 फ़ॉन्ट इंस्टॉल नहीं किया गया है।",
-  },
-
-  // Shared practice/test sidebar
-  session_progress: { en: "Your Progress", hi: "आपकी प्रगति" },
-  session_time: { en: "Time", hi: "समय" },
-  session_time_left: { en: "Time Left", hi: "शेष समय" },
-  session_next: { en: "Next", hi: "अगला" },
-  session_cancel: { en: "Cancel", hi: "रद्द करें" },
-  session_finish: { en: "Finish Test", hi: "टेस्ट समाप्त करें" },
-
-  // Typing Test
-  test_title: { en: "Typing Test", hi: "टाइपिंग टेस्ट" },
-  test_subtitle: {
-    en: "Timed test with WPM, accuracy and a pass/fail report - practice exactly like your exam.",
-    hi: "समय-आधारित टेस्ट जिसमें WPM, सटीकता और पास/फेल रिपोर्ट मिलती है - बिल्कुल अपनी परीक्षा जैसा अभ्यास करें।",
-  },
-  test_language: { en: "Language", hi: "भाषा" },
-  test_duration: { en: "Duration", hi: "अवधि" },
-  test_passage: { en: "Test Text", hi: "टेस्ट टेक्स्ट" },
-  test_target_wpm: { en: "Target WPM (optional)", hi: "लक्ष्य WPM (वैकल्पिक)" },
-  test_target_accuracy: { en: "Target Accuracy % (optional)", hi: "लक्ष्य सटीकता % (वैकल्पिक)" },
-  test_start: { en: "Start Test", hi: "टेस्ट शुरू करें" },
-  test_minutes: { en: "min", hi: "मिनट" },
-  test_words: { en: "words", hi: "शब्द" },
-  test_finished_early: {
-    en: "Full passage typed before time ran out - test ended automatically.",
-    hi: "समय समाप्त होने से पहले ही पूरा टेक्स्ट टाइप हो गया - टेस्ट अपने आप समाप्त हो गया।",
-  },
-  test_result_title: { en: "Test Result", hi: "टेस्ट परिणाम" },
-  test_result_pass: { en: "PASS - meets your target", hi: "पास - आपके लक्ष्य के अनुसार" },
-  test_result_fail: { en: "Below target - keep practicing", hi: "लक्ष्य से कम - अभ्यास जारी रखें" },
-  test_gross_wpm: { en: "Gross WPM", hi: "सकल WPM" },
-  test_net_wpm: { en: "Net WPM", hi: "निवल WPM" },
-  test_accuracy: { en: "Accuracy", hi: "सटीकता" },
-  test_errors: { en: "Uncorrected Errors", hi: "अशुद्धियाँ" },
-  test_duration_used: { en: "Duration", hi: "अवधि" },
-  test_retry: { en: "Retake Test", hi: "फिर से टेस्ट दें" },
-  test_new: { en: "New Test", hi: "नया टेस्ट" },
-  test_saved: { en: "Result saved to your profile.", hi: "परिणाम आपकी प्रोफ़ाइल में सहेज दिया गया।" },
 } as const;
-
-export type StringKey = keyof typeof strings;
+export type StringKey = keyof typeof strings.en;
+export type InterfaceLang = keyof typeof strings;

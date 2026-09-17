@@ -1,0 +1,24 @@
+TypeGuru Pro - Phase 4 Build Status (v0.4.0)
+=============================================
+WHAT WAS DONE IN THIS ENVIRONMENT:
+  - All Phase 4 source files were authored/updated (see MANIFEST.txt).
+  - Dexie schema upgraded v2 -> v3 (additive, no data loss).
+WHAT WAS **NOT** RUN HERE (be honest):
+  - npm ci / npm install       : NOT run (no network access in this sandbox).
+  - npm run typecheck (tsc)    : NOT run.
+  - npm run build (vite)       : NOT run.
+  - Windows installer/EXE       : NOT built.
+  - App was NOT launched or smoke-tested.
+WHY: The build sandbox has no internet, so dependencies could not be installed
+and the TypeScript/Vite toolchain could not execute. Nothing was faked.
+LEGACY ENCODING HONESTY:
+  - Kruti Dev 010 verified keys : 0  (all mappings ship empty + unverified)
+  - Remington GAIL verified keys: 0  (all mappings ship empty + unverified)
+  - No key mapping was guessed or fabricated.
+  - The Kruti Dev font is copyrighted and is NOT bundled or downloaded.
+HOW TO VERIFY / BUILD YOURSELF:
+  1. npm ci
+  2. npm run typecheck
+  3. npm run build
+  4. For Windows EXE: push to GitHub and run the "Build Windows EXE" Action;
+     download the TypeGuruPro-Windows artifact. (Unsigned build.)

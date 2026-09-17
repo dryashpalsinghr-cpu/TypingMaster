@@ -1,27 +1,16 @@
 import { NavLink } from "react-router-dom";
-import {
-  LayoutDashboard,
-  BookOpen,
-  Keyboard,
-  Timer,
-  GraduationCap,
-  Target,
-  Gamepad2,
-  BarChart3,
-  Award,
-  Users,
-  Settings as SettingsIcon,
-  Grid3x3,
-} from "lucide-react";
+import { LayoutDashboard, BookOpen, Keyboard, Timer, GraduationCap, Target, Gamepad2, BarChart3, Award, Users, Settings as SettingsIcon, Grid3x3 } from "lucide-react";
 import clsx from "clsx";
 import { useT } from "../hooks/useTranslation";
 import type { StringKey } from "../i18n/strings";
-
 const NAV_ITEMS: { to: string; key: StringKey; icon: typeof LayoutDashboard }[] = [
   { to: "/dashboard", key: "nav_dashboard", icon: LayoutDashboard },
   { to: "/learn", key: "nav_learn", icon: BookOpen },
   { to: "/practice", key: "nav_practice", icon: Keyboard },
   { to: "/keyboard-chart", key: "nav_keyboard_chart", icon: Grid3x3 },
+  { to: "/font-setup", key: "nav_font_setup", icon: Keyboard },
+  { to: "/mapping-validator", key: "nav_mapping_validator", icon: Grid3x3 },
+  { to: "/converter", key: "nav_converter", icon: BookOpen },
   { to: "/test", key: "nav_test", icon: Timer },
   { to: "/exam", key: "nav_exam", icon: GraduationCap },
   { to: "/review", key: "nav_review", icon: Target },
@@ -31,7 +20,6 @@ const NAV_ITEMS: { to: string; key: StringKey; icon: typeof LayoutDashboard }[] 
   { to: "/profiles", key: "nav_profiles", icon: Users },
   { to: "/settings", key: "nav_settings", icon: SettingsIcon },
 ];
-
 export function AppSidebar() {
   const t = useT();
   return (
@@ -42,20 +30,8 @@ export function AppSidebar() {
       </div>
       <nav className="space-y-1">
         {NAV_ITEMS.map(({ to, key, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            className={({ isActive }) =>
-              clsx(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"
-                  : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-              )
-            }
-          >
-            <Icon size={18} />
-            {t(key)}
+          <NavLink key={to} to={to} className={({ isActive }) => clsx("flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors", isActive ? "bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300" : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800")}>
+            <Icon size={18} />{t(key)}
           </NavLink>
         ))}
       </nav>

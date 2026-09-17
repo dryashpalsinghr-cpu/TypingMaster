@@ -1,0 +1,44 @@
+TypeGuru Pro - Phase 4 Update - File Manifest (v0.4.0)
+=======================================================
+HOW TO USE: Copy each file below to the SAME path inside your existing
+TypeGuru Pro project, overwriting the old file. Folder structure here already
+matches the project. Then run: npm ci && npm run typecheck && npm run build
+
+--- NEW FILES (14) ---
+src/keyboards/krutiDev010.ts            Kruti Dev 010 layout (legacy, empty+unverified keys)
+src/keyboards/remingtonGail.ts          Remington GAIL layout (legacy, empty+unverified keys)
+src/engine/adapters/types.ts            TypingAdapter interface
+src/engine/adapters/unicodeAdapter.ts   Unicode NFC + grapheme segmentation adapter
+src/engine/adapters/legacyFontAdapter.ts Legacy font byte adapter (no normalization)
+src/engine/adapters/index.ts            getAdapterForLayout selector
+src/converter/krutiDevUnicode.ts        Kruti Dev <-> Unicode converter (verified-only)
+src/services/mappingService.ts          Overrides, verification, import/export, font status
+src/data/lessons/krutiDevBeginner.ts    Kruti Dev course (empty lessons until verified)
+src/data/lessons/remingtonGailBeginner.ts Remington course (empty lessons until verified)
+src/pages/FontSetupPage.tsx             Local licensed-font detection page
+src/pages/MappingValidatorPage.tsx      Admin mapping validator (PIN, overrides, import/export)
+src/pages/ConverterPage.tsx             Beta converter UI
+BUILD-STATUS.txt                        Honest build/verify status
+
+--- MODIFIED FILES (17) ---
+package.json                            version -> 0.4.0
+src/types/index.ts                      Encoding types + new record interfaces
+src/db/database.ts                      Dexie v3 migration (+5 stores)
+src/keyboards/index.ts                  Register legacy layouts
+src/data/lessons/index.ts               Include legacy courses + getLessonsForLayout
+src/App.tsx                             Routes: /font-setup /mapping-validator /converter
+src/components/AppSidebar.tsx           Nav entries for new pages
+src/components/AppHeader.tsx            Legacy layout options in switcher
+src/pages/LearnPage.tsx                 Legacy locked-lessons notice
+src/pages/SettingsPage.tsx             Legacy Hindi section
+src/i18n/strings.ts                     New EN/HI strings
+src/index.css                          KrutiDev010Local @font-face + .font-krutidev
+README.md                              Phase 4 docs
+PROJECT_STATUS.md                      Status update
+NEXT_PHASE.md                          Phase 5+ roadmap
+CHANGELOG.md                           0.4.0 entry
+TESTING.md                             QA checklist
+
+NOTE: 0 Kruti Dev and 0 Remington keys are verified by design - nothing guessed.
+The copyrighted Kruti Dev font is NOT included. No build/typecheck/EXE was run
+in the authoring sandbox (no network) - see BUILD-STATUS.txt.
