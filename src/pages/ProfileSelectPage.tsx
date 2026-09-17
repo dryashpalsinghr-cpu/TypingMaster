@@ -4,6 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import type { Profile, SkillLevel } from "../types";
 import { createProfile, deleteProfile, listProfiles } from "../services/profileService";
 import { useProfileContext, ACTIVE_PROFILE_STORAGE_KEY } from "../contexts/ProfileContext";
+import profileBackground from "../assets/profile-background.png";
 
 export function ProfileSelectPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -33,8 +34,11 @@ export function ProfileSelectPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 dark:bg-slate-950">
-      <div className="w-full max-w-xl">
+    <div
+      className="flex min-h-screen items-center justify-center bg-slate-50 bg-cover bg-center p-6 dark:bg-slate-950"
+      style={{ backgroundImage: `url(${profileBackground})` }}
+    >
+      <div className="w-full max-w-xl rounded-3xl bg-white/85 p-6 shadow-xl backdrop-blur-sm dark:bg-slate-950/80 sm:p-8">
         <div className="mb-8 text-center">
           <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-brand-600 text-2xl font-bold text-white">
             TG
