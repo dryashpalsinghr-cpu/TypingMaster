@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { RotateCcw, Clock } from "lucide-react";
+import { RotateCcw, Clock, Gauge, TrendingUp, Target, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { getLessonById, getLessonExercises, getLessonsForLayout } from "../data/lessons";
 import { getKeyboardLayout, getKeyboardRows } from "../keyboards";
 import { enQwertyLayout } from "../keyboards/enQwerty";
@@ -11,11 +11,32 @@ import { PracticeText } from "../components/PracticeText";
 import { VirtualKeyboard } from "../components/VirtualKeyboard";
 import { HandGuide } from "../components/HandGuide";
 import { SessionSidePanel, formatClock } from "../components/practice/SessionSidePanel";
+import { FingerConnector } from "../components/practice/FingerConnector";
+import { PremiumStatCard } from "../components/practice/PremiumStatCard";
 import { useProfileContext } from "../contexts/ProfileContext";
 import { useThemeContext } from "../contexts/ThemeContext";
 import { saveAttempt } from "../services/statsService";
 import { touchProfileActivity } from "../services/profileService";
 import type { AttemptResult } from "../types";
+
+// Short, dynamic coaching tip keyed off the row of the key the learner needs
+// next - real guidance derived from the active key, not decorative filler.
+function tipForRow(row: string | undefined): string {
+  switch (row) {
+    case "home":
+      return "Keep your fingers resting on the home row keys.";
+    case "top":
+      return "Reach up from the home row, then return - don't move your wrist.";
+    case "bottom":
+      return "Curl your finger down gently to reach the bottom row.";
+    case "number":
+      return "Stretch up to the number row and snap back to home row after.";
+    case "space":
+      return "Use your thumb for the space bar without looking down.";
+    default:
+      return "Stay relaxed - accuracy first, speed follows naturally.";
+  }
+}
 
 // English key -> normal-label lookup, used as the optional physical-key
 // hint overlay when practicing Hindi InScript (spec section 11).
@@ -110,6 +131,12 @@ export function LessonPracticePage() {
   const nextNeededChar = currentCell ? currentCell.expected[currentCell.typedBuffer.length] ?? null : null;
   const activeKeyDef = !lessonTimeUp && nextNeededChar ? findKeyForOutput(layout, nextNeededChar) : null;
   const shiftRequired = !lessonTimeUp && nextNeededChar ? outputRequiresShift(layout, nextNeededChar) : false;
+
+  // Stage that wraps the virtual keyboard + hand guide, so FingerConnector
+  // can measure both and draw the guide line between them (premium theme).
+  const keyboardStageRef = useRef<HTMLDivElement>(null);
+  const currentKeyLabel = !lessonTimeUp && nextNeededChar ? (nextNeededChar === " " ? "Space" : nextNeededChar) : null;
+  const currentTip = tipForRow(activeKeyDef?.row);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -214,39 +241,46 @@ export function LessonPracticePage() {
   const progressRatio = snapshot.characters.length ? snapshot.cursor / snapshot.characters.length : 0;
 
   return (
-    <div className="mx-auto flex h-full max-w-6xl flex-col gap-4 p-4 practice-workspace">
+    <div className="practice-premium mx-auto flex h-full max-w-6xl flex-col gap-4 p-4 practice-workspace">
+      <div className="practice-premium__bg" aria-hidden="true" />
+      <div className="practice-premium__grid" aria-hidden="true" />
+      <div className="pp-motivation right-6 top-2 hidden text-sm lg:block" aria-hidden="true">
+        Small Steps
+        <br />
+        Big Progress
+      </div>
+
       <div className="flex shrink-0 items-center justify-between">
         <div>
-          <div className="text-xs font-medium uppercase text-brand-600 font-devanagari">
+          <div className="text-xs font-bold uppercase tracking-wide text-[#1677e8] font-devanagari">
             {interfaceLanguage === "hi" ? layout.labelHi : layout.label}
           </div>
-          <h1 className="text-xl font-bold font-devanagari">{interfaceLanguage === "hi" && lesson.titleHi ? lesson.titleHi : lesson.title}</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 font-devanagari">
+          <h1 className="text-2xl font-extrabold text-[#0f2a52] dark:text-slate-100 font-devanagari">
+            {interfaceLanguage === "hi" && lesson.titleHi ? lesson.titleHi : lesson.title}
+          </h1>
+          <p className="text-sm text-[#5c7599] dark:text-slate-400 font-devanagari">
             {interfaceLanguage === "hi" && lesson.descriptionHi ? lesson.descriptionHi : lesson.description}
           </p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-[#7c93b8] dark:text-slate-500">
             {t("practice_exercise")} {exerciseIndex + 1} {t("practice_of")} {exercises.length}
             {exercise.label ? ` · ${interfaceLanguage === "hi" && exercise.labelHi ? exercise.labelHi : exercise.label}` : ""}
           </p>
         </div>
-        <button
-          onClick={restart}
-          className="flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"
-        >
+        <button onClick={restart} className="pp-restart-btn">
           <RotateCcw size={14} /> {t("practice_restart")}
         </button>
       </div>
 
-      <div className="grid shrink-0 grid-cols-3 gap-4 sm:grid-cols-5">
-        <MetricPill label={t("practice_gross_wpm")} value={Math.round(metrics.grossWpm)} />
-        <MetricPill label={t("practice_net_wpm")} value={Math.round(metrics.netWpm)} />
-        <MetricPill label={t("practice_accuracy")} value={`${metrics.accuracy}%`} />
-        <MetricPill label={t("practice_errors")} value={snapshot.uncorrectedErrors} />
-        <MetricPill label={t("practice_progress")} value={`${Math.round(progressRatio * 100)}%`} />
+      <div className="grid shrink-0 grid-cols-3 gap-3 sm:grid-cols-5">
+        <PremiumStatCard icon={Gauge} label={t("practice_gross_wpm")} value={Math.round(metrics.grossWpm)} color="#1677e8" />
+        <PremiumStatCard icon={TrendingUp} label={t("practice_net_wpm")} value={Math.round(metrics.netWpm)} color="#0ea5e9" />
+        <PremiumStatCard icon={Target} label={t("practice_accuracy")} value={`${metrics.accuracy}%`} color="#22c55e" />
+        <PremiumStatCard icon={AlertTriangle} label={t("practice_errors")} value={snapshot.uncorrectedErrors} color="#ef4444" />
+        <PremiumStatCard icon={CheckCircle2} label={t("practice_progress")} value={`${Math.round(progressRatio * 100)}%`} color="#8b5cf6" />
       </div>
 
       {isHindi && (
-        <p className="shrink-0 text-xs text-slate-400 font-devanagari">
+        <p className="pp-glass shrink-0 px-4 py-2 text-xs text-[#2d4f7c] dark:text-slate-400 font-devanagari">
           {t("practice_input_mode")}: {layout.labelHi} — यह ऐप कुंजी-कोड आधारित मैपिंग उपयोग करता है, इसलिए Windows में
           InScript लेआउट सक्रिय किए बिना भी टाइपिंग सही काम करती है।{" "}
           <button onClick={() => navigate("/keyboard-chart")} className="underline">
@@ -256,7 +290,7 @@ export function LessonPracticePage() {
       )}
 
       {snapshot.completed && (
-        <div className="shrink-0 rounded-xl border border-green-200 bg-green-50 p-4 text-green-800 dark:border-green-900 dark:bg-green-900/20 dark:text-green-300">
+        <div className="shrink-0 rounded-xl border border-green-200 bg-green-50/90 p-4 text-green-800 dark:border-green-900 dark:bg-green-900/20 dark:text-green-300">
           <p className="font-semibold">
             {metrics.grossWpm >= lesson.passWpm && metrics.accuracy >= lesson.passAccuracy
               ? t("practice_lesson_passed")
@@ -265,35 +299,47 @@ export function LessonPracticePage() {
         </div>
       )}
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_260px]">
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_280px]">
         <div className="flex min-h-0 flex-col gap-3">
           <div className="shrink-0">
-            <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} />
+            <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} variant="premium" />
           </div>
-          <div className="shrink-0">
-            <VirtualKeyboard
-              rows={rows}
+          <div ref={keyboardStageRef} className="relative flex min-h-0 flex-1 flex-col gap-3">
+            <FingerConnector
+              stageRef={keyboardStageRef}
               activeCode={activeKeyDef?.code ?? null}
-              pressedCode={pressedCode}
-              pressedCorrect={pressedCorrect}
-              shiftActive={shiftActive}
-              shiftRequired={shiftRequired}
-              showFingerColors
-              devanagari={isHindi}
-              physicalHints={isHindi ? ENGLISH_HINTS : undefined}
+              activeFinger={activeKeyDef?.finger ?? null}
             />
-          </div>
-          <div className="min-h-0 flex-1">
-            <HandGuide activeFinger={activeKeyDef?.finger ?? null} />
+            <div className="shrink-0">
+              <VirtualKeyboard
+                rows={rows}
+                activeCode={activeKeyDef?.code ?? null}
+                pressedCode={pressedCode}
+                pressedCorrect={pressedCorrect}
+                shiftActive={shiftActive}
+                shiftRequired={shiftRequired}
+                showFingerColors
+                devanagari={isHindi}
+                physicalHints={isHindi ? ENGLISH_HINTS : undefined}
+                variant="premium"
+              />
+            </div>
+            <div className="min-h-0 flex-1">
+              <HandGuide activeFinger={activeKeyDef?.finger ?? null} variant="premium" />
+            </div>
           </div>
         </div>
 
         <SessionSidePanel
+          variant="premium"
           progressLabel={t("session_progress")}
           progressRatio={progressRatio}
           timeLabel={t("session_time_left")}
           timeValue={formatClock(remainingMs / 1000)}
           timeUrgent={remainingMs <= 30_000}
+          currentKeyLabel={currentKeyLabel}
+          currentKeyCaption="Current Key"
+          tip={currentTip}
           primaryLabel={isLastExercise ? t("practice_back_to_learn") : t("session_next")}
           primaryDisabled={lessonTimeUp || !snapshot.completed}
           onPrimary={goToNextExercise}
@@ -309,39 +355,27 @@ export function LessonPracticePage() {
           aria-labelledby="lesson-complete-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
         >
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl dark:bg-slate-900">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-300">
+          <div className="pp-glass w-full max-w-sm p-6 text-center !bg-white dark:!bg-slate-900">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#1677e8] to-[#4ea8ff] text-white shadow-lg">
               <Clock size={22} />
             </div>
-            <h2 id="lesson-complete-title" className="text-lg font-bold font-devanagari">
+            <h2 id="lesson-complete-title" className="text-lg font-bold text-[#0f2a52] dark:text-slate-100 font-devanagari">
               {t("practice_lesson_complete_title")}
             </h2>
-            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 font-devanagari">
+            <p className="mt-1 text-sm text-[#5c7599] dark:text-slate-400 font-devanagari">
               {t("practice_lesson_complete_body")}
             </p>
             <div className="mt-4 grid grid-cols-3 gap-2 text-left">
-              <MetricPill label={t("practice_gross_wpm")} value={Math.round(metrics.grossWpm)} />
-              <MetricPill label={t("practice_accuracy")} value={`${metrics.accuracy}%`} />
-              <MetricPill label={t("practice_errors")} value={snapshot.uncorrectedErrors} />
+              <PremiumStatCard icon={Gauge} label={t("practice_gross_wpm")} value={Math.round(metrics.grossWpm)} color="#1677e8" />
+              <PremiumStatCard icon={Target} label={t("practice_accuracy")} value={`${metrics.accuracy}%`} color="#22c55e" />
+              <PremiumStatCard icon={AlertTriangle} label={t("practice_errors")} value={snapshot.uncorrectedErrors} color="#ef4444" />
             </div>
-            <button
-              onClick={goToNextLesson}
-              className="mt-5 w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
-            >
+            <button onClick={goToNextLesson} className="pp-btn-primary mt-5">
               {t("practice_next_lesson")}
             </button>
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-function MetricPill({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-lg bg-white p-2 text-center shadow-sm dark:bg-slate-900">
-      <div className="text-lg font-bold">{value}</div>
-      <div className="text-[10px] uppercase text-slate-400">{label}</div>
     </div>
   );
 }

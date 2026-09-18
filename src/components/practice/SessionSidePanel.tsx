@@ -27,6 +27,17 @@ interface SessionSidePanelProps {
   showPrimary?: boolean;
   secondaryLabel?: string;
   onSecondary?: () => void;
+  /** "premium" renders the glass "Your Progress" panel used by the
+   * redesigned Practice screen. Omitted keeps the original panel exactly as
+   * before, so TypingTestPage (which also renders this component) is
+   * unaffected. */
+  variant?: "default" | "premium";
+  /** premium only: the next character the learner needs to type, shown large
+   * in a "Current Key" card. */
+  currentKeyLabel?: string | null;
+  currentKeyCaption?: string;
+  /** premium only: a short rotating coaching tip. */
+  tip?: string;
 }
 
 export function SessionSidePanel({
@@ -41,9 +52,58 @@ export function SessionSidePanel({
   showPrimary = true,
   secondaryLabel,
   onSecondary,
+  variant = "default",
+  currentKeyLabel,
+  currentKeyCaption,
+  tip,
 }: SessionSidePanelProps) {
   const ratio = Math.min(1, Math.max(0, progressRatio));
   const bars = useMemo(() => BASE_HEIGHTS.map((h) => Math.max(0.08, h * ratio)), [ratio]);
+
+  if (variant === "premium") {
+    return (
+      <div className="pp-glass flex h-full w-full flex-col p-4">
+        <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[#0f2a52] dark:text-slate-100">
+          <span className="inline-block h-2 w-2 rounded-sm" style={{ backgroundColor: "#1677e8" }} />
+          {progressLabel}
+        </div>
+        <div className="pp-panel-bars mb-4">
+          {bars.map((h, i) => (
+            <div key={i} className="pp-panel-bar" style={{ height: `${h * 100}%` }} />
+          ))}
+        </div>
+
+        <div className="mb-4">
+          <div className="pp-stat-label">{timeLabel}</div>
+          <div className={clsx("text-3xl font-bold tabular-nums", timeUrgent ? "text-red-500" : "text-[#0f2a52] dark:text-slate-100")}>
+            {timeValue}
+          </div>
+        </div>
+
+        {currentKeyLabel !== undefined && (
+          <div className="mb-4">
+            <div className="pp-stat-label mb-1">{currentKeyCaption}</div>
+            <div className="pp-current-key">{currentKeyLabel || "—"}</div>
+          </div>
+        )}
+
+        {tip && <div className="pp-tip mb-4">{tip}</div>}
+
+        <div className="mt-auto space-y-2">
+          {showPrimary && (
+            <button onClick={onPrimary} disabled={primaryDisabled} className="pp-btn-primary">
+              {primaryLabel}
+            </button>
+          )}
+          {secondaryLabel && (
+            <button onClick={onSecondary} className="pp-btn-secondary">
+              {secondaryLabel}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full w-full flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">

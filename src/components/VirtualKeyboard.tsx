@@ -14,6 +14,11 @@ interface VirtualKeyboardProps {
    * physical-key hints". Pass the base English layout keyed by code. */
   physicalHints?: Map<string, string>;
   devanagari?: boolean;
+  /** "premium" renders the 3D glass keyboard used by the redesigned Practice
+   * screen. Omitted (or "default") keeps the original flat keyboard exactly
+   * as before, so every other screen that renders this component is
+   * unaffected. */
+  variant?: "default" | "premium";
 }
 
 // Same hex palette as HandGuide.tsx, so the keyboard tint always matches the
@@ -52,7 +57,51 @@ export function VirtualKeyboard({
   showFingerColors,
   physicalHints,
   devanagari,
+  variant = "default",
 }: VirtualKeyboardProps) {
+  if (variant === "premium") {
+    return (
+      <div className="pp-keyboard select-none" aria-label="Virtual keyboard">
+        {rows.map((row, ri) => (
+          <div key={ri} className="mb-2 flex gap-1.5 last:mb-0">
+            {row.map((key) => {
+              const isActive = key.code === activeCode;
+              const isPressed = key.code === pressedCode;
+              const isShiftKey = key.code === "ShiftLeft" || key.code === "ShiftRight";
+              const hint = physicalHints?.get(key.code);
+              const applyFingerTint = showFingerColors && !key.isModifier && !isActive && !isPressed;
+              const fingerColor = FINGER_COLORS[key.finger];
+              return (
+                <div
+                  key={key.code}
+                  data-key-code={key.code}
+                  className={clsx(
+                    "pp-key h-11",
+                    key.isModifier && "pp-key--modifier",
+                    isActive && "pp-key--active",
+                    isPressed && pressedCorrect === true && "pp-key--correct",
+                    isPressed && pressedCorrect === false && "pp-key--wrong",
+                    isShiftKey && (shiftActive || shiftRequired) && !isActive && "pp-key--shift-hint",
+                    devanagari && !key.isModifier && "font-devanagari"
+                  )}
+                  style={{
+                    flex: key.width ?? 1,
+                    ...(applyFingerTint
+                      ? { backgroundColor: hexToRgba(fingerColor, 0.16), borderColor: hexToRgba(fingerColor, 0.45) }
+                      : {}),
+                  }}
+                >
+                  <span>{key.code === "Space" ? "" : shiftActive && key.shiftLabel ? key.shiftLabel : key.normalLabel}</span>
+                  {hint && !key.isModifier && <span className="pp-key__hint">{hint}</span>}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div
       className="select-none rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900"
@@ -70,6 +119,7 @@ export function VirtualKeyboard({
             return (
               <div
                 key={key.code}
+                data-key-code={key.code}
                 className={clsx(
                   "relative flex h-11 flex-col items-center justify-center rounded-lg border-2 text-sm font-semibold transition-all duration-75",
                   key.isModifier

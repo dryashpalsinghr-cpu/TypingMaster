@@ -61,3 +61,188 @@ body { font-family: "Noto Sans", system-ui, sans-serif; }
   transition: left 0.12s ease-out, top 0.12s ease-out, background-color 0.12s ease-out;
   z-index: 5;
 }
+
+/* =========================================================================
+   PREMIUM PRACTICE THEME
+   Scoped entirely under .pp-* / .practice-premium classes so nothing here
+   touches the look of any other screen. Used by LessonPracticePage plus the
+   "premium" variant branches added to PracticeText, VirtualKeyboard,
+   HandGuide and SessionSidePanel.
+   ========================================================================= */
+.practice-premium { position: relative; isolation: isolate; border-radius: 1.5rem; }
+.practice-premium__bg {
+  position: absolute; inset: -1px; z-index: -2; overflow: hidden; border-radius: 1.5rem;
+  background:
+    radial-gradient(60% 50% at 12% 8%, rgba(142, 212, 255, 0.55), transparent 70%),
+    radial-gradient(55% 45% at 92% 12%, rgba(78, 168, 255, 0.32), transparent 70%),
+    radial-gradient(70% 55% at 50% 105%, rgba(191, 227, 255, 0.55), transparent 70%),
+    linear-gradient(180deg, #EAF6FF 0%, #D7EEFF 45%, #FFFFFF 100%);
+}
+.dark .practice-premium__bg {
+  background:
+    radial-gradient(60% 50% at 12% 8%, rgba(22, 119, 232, 0.22), transparent 70%),
+    radial-gradient(55% 45% at 92% 12%, rgba(78, 168, 255, 0.14), transparent 70%),
+    linear-gradient(180deg, #0b1220 0%, #0e1a2f 55%, #0b1220 100%);
+}
+.practice-premium__bg::before,
+.practice-premium__bg::after {
+  content: ""; position: absolute; border-radius: 9999px; filter: blur(46px); opacity: 0.55;
+}
+.practice-premium__bg::before { width: 340px; height: 230px; top: -70px; left: 8%; background: radial-gradient(circle, #ffffff, #cfe9ff 60%, transparent 75%); }
+.practice-premium__bg::after { width: 300px; height: 200px; bottom: -50px; right: 6%; background: radial-gradient(circle, #ffffff, #bfe3ff 60%, transparent 75%); }
+.dark .practice-premium__bg::before, .dark .practice-premium__bg::after { opacity: 0.12; }
+.practice-premium__grid {
+  position: absolute; inset: 0; z-index: -1; border-radius: 1.5rem;
+  background-image:
+    linear-gradient(rgba(23, 119, 232, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(23, 119, 232, 0.07) 1px, transparent 1px);
+  background-size: 32px 32px;
+  -webkit-mask-image: radial-gradient(65% 60% at 50% 30%, black 35%, transparent 85%);
+  mask-image: radial-gradient(65% 60% at 50% 30%, black 35%, transparent 85%);
+}
+.dark .practice-premium__grid { opacity: 0.5; }
+.pp-motivation {
+  position: absolute; z-index: -1; font-weight: 700; color: rgba(23, 119, 232, 0.07);
+  line-height: 1.05; text-align: right; pointer-events: none; user-select: none;
+}
+.dark .pp-motivation { color: rgba(142, 212, 255, 0.05); }
+
+.pp-glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(148, 197, 255, 0.45);
+  box-shadow: 0 8px 30px -14px rgba(23, 119, 232, 0.35);
+  border-radius: 1.1rem;
+}
+.dark .pp-glass { background: rgba(15, 23, 42, 0.62); border-color: rgba(56, 91, 156, 0.4); }
+
+.pp-restart-btn {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  border-radius: 0.75rem; padding: 0.55rem 1rem; font-size: 0.8rem; font-weight: 600;
+  color: #0a5bc4; background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(23, 119, 232, 0.35);
+  box-shadow: 0 4px 14px -8px rgba(23, 119, 232, 0.5);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.pp-restart-btn:hover { background: #ffffff; box-shadow: 0 6px 18px -8px rgba(23, 119, 232, 0.6); transform: translateY(-1px); }
+.dark .pp-restart-btn { color: #8ed4ff; background: rgba(15, 23, 42, 0.7); border-color: rgba(78, 168, 255, 0.35); }
+
+.pp-stat-card {
+  display: flex; align-items: center; gap: 0.6rem; padding: 0.7rem 0.85rem;
+  border-radius: 1rem;
+}
+.pp-stat-icon {
+  display: grid; place-items: center; width: 2.1rem; height: 2.1rem; border-radius: 0.75rem; flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.5);
+}
+.pp-stat-value { font-size: 1.15rem; font-weight: 800; color: #0f2a52; line-height: 1.1; }
+.dark .pp-stat-value { color: #eaf6ff; }
+.pp-stat-label { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #5c7599; }
+.dark .pp-stat-label { color: #8ea6c9; }
+
+/* ---- typing sequence characters ---- */
+.pp-char { padding: 0.03em 0.05em; border-radius: 0.35rem; transition: all 0.15s ease; }
+.pp-char--upcoming { color: #64748b; }
+.dark .pp-char--upcoming { color: #7c8db3; }
+.pp-char--completed { color: #16a34a; background: rgba(34, 197, 94, 0.12); }
+.pp-char--error { color: #dc2626; background: rgba(239, 68, 68, 0.18); }
+.pp-char--current {
+  position: relative; color: #0a5bc4;
+  background: linear-gradient(180deg, #e6f4ff, #cfe9ff);
+  box-shadow: 0 0 0 2px rgba(23, 119, 232, 0.55) inset, 0 4px 14px -8px rgba(23, 119, 232, 0.6);
+}
+.pp-char--current::after {
+  content: ""; position: absolute; left: 12%; right: 12%; bottom: 1px; height: 3px; border-radius: 2px;
+  background: linear-gradient(90deg, #1677e8, #4ea8ff); animation: pp-underline-pulse 1.1s ease-in-out infinite;
+}
+@keyframes pp-underline-pulse { 0%, 100% { opacity: 0.45; } 50% { opacity: 1; } }
+
+/* ---- 3D virtual keyboard ---- */
+.pp-keyboard {
+  border-radius: 1.25rem; padding: 14px;
+  background: linear-gradient(180deg, #f2f8ff, #e2edfb);
+  border: 1px solid rgba(148, 197, 255, 0.55);
+  box-shadow: 0 22px 44px -28px rgba(23, 119, 232, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+.dark .pp-keyboard { background: linear-gradient(180deg, #101b30, #0c1526); border-color: rgba(56, 91, 156, 0.5); }
+.pp-key {
+  position: relative; border-radius: 9px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 0.78rem; color: #33415c;
+  background: linear-gradient(180deg, #ffffff 0%, #eef3fb 60%, #e1e8f4 100%);
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 3px 0 rgba(148, 163, 184, 0.35), 0 6px 10px -4px rgba(30, 64, 120, 0.28);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+}
+.dark .pp-key { color: #cbd8f0; background: linear-gradient(180deg, #1b2a45, #14213a); border-color: rgba(71, 99, 148, 0.6); box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 3px 0 rgba(8,14,28,0.6), 0 6px 10px -4px rgba(0,0,0,0.4); }
+.pp-key--modifier { color: #64748b; background: linear-gradient(180deg, #eef2f8, #e0e7f2); font-size: 0.66rem; }
+.pp-key--active {
+  color: #0a5bc4; background: linear-gradient(180deg, #eaf6ff, #bee2ff); border-color: #1677e8;
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 3px rgba(22, 119, 232, 0.3), 0 6px 16px -4px rgba(22, 119, 232, 0.55), 0 3px 0 rgba(23, 119, 232, 0.55);
+  animation: pp-key-pulse 1.2s ease-in-out infinite;
+}
+@keyframes pp-key-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(22, 119, 232, 0.26), 0 6px 16px -4px rgba(22, 119, 232, 0.5), 0 3px 0 rgba(23, 119, 232, 0.55); }
+  50% { box-shadow: 0 0 0 6px rgba(22, 119, 232, 0.14), 0 6px 22px -2px rgba(22, 119, 232, 0.65), 0 3px 0 rgba(23, 119, 232, 0.55); }
+}
+.pp-key--correct { background: linear-gradient(180deg, #ecfdf3, #bbf7d0); border-color: #22c55e; color: #166534; transform: translateY(2px); box-shadow: 0 1px 0 rgba(255,255,255,0.6) inset, 0 1px 4px -1px rgba(22,163,74,0.4); }
+.pp-key--wrong { background: linear-gradient(180deg, #fef2f2, #fecaca); border-color: #ef4444; color: #991b1b; animation: pp-key-shake 0.28s ease; transform: translateY(2px); }
+@keyframes pp-key-shake { 0%, 100% { transform: translateX(0) translateY(2px); } 25% { transform: translateX(-3px) translateY(2px); } 75% { transform: translateX(3px) translateY(2px); } }
+.pp-key--shift-hint { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35); }
+.pp-key__hint { position: absolute; bottom: 1px; right: 3px; font-size: 7px; font-weight: 500; color: #94a3b8; }
+
+/* ---- realistic hands ---- */
+.pp-hands { pointer-events: none; opacity: 0.96; display: flex; flex-direction: column; height: 100%; min-height: 0; align-items: center; justify-content: center; }
+.pp-hands__art { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; }
+.pp-hands__art img { max-height: 100%; max-width: 100%; width: auto; height: auto; object-fit: contain; filter: drop-shadow(0 14px 18px rgba(23,119,232,0.18)); }
+.pp-hands__marker {
+  position: absolute; width: 24px; height: 24px; border-radius: 9999px; transform: translate(-50%, -50%);
+  transition: left 0.14s ease-out, top 0.14s ease-out, background-color 0.14s ease-out;
+  animation: pp-marker-pulse 1.3s ease-in-out infinite; z-index: 5;
+}
+@keyframes pp-marker-pulse { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -50%) scale(1.18); } }
+
+/* ---- finger connector line ---- */
+.pp-connector { position: absolute; inset: 0; pointer-events: none; z-index: 4; overflow: visible; }
+.pp-connector path { fill: none; stroke: #4ea8ff; stroke-width: 2; stroke-dasharray: 5 6; opacity: 0.7; animation: pp-dash 0.9s linear infinite; }
+@keyframes pp-dash { to { stroke-dashoffset: -22; } }
+
+/* ---- right progress panel ---- */
+.pp-panel-bars { display: flex; height: 6rem; align-items: flex-end; gap: 3px; border-radius: 0.75rem; padding: 0.5rem; background: rgba(23, 119, 232, 0.06); }
+.dark .pp-panel-bars { background: rgba(78, 168, 255, 0.08); }
+.pp-panel-bar { flex: 1; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, #4ea8ff, #1677e8); transition: height 0.3s ease; }
+.pp-current-key {
+  display: grid; place-items: center; width: 100%; aspect-ratio: 1.6; border-radius: 1rem;
+  background: linear-gradient(180deg, #eaf6ff, #cfe9ff); border: 1px solid rgba(23,119,232,0.3);
+  font-size: 1.9rem; font-weight: 800; color: #0a5bc4; box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+  transition: all 0.2s ease;
+}
+.dark .pp-current-key { background: linear-gradient(180deg, #16233d, #0e1930); color: #8ed4ff; }
+.pp-tip { border-radius: 0.85rem; background: rgba(23, 119, 232, 0.07); border: 1px solid rgba(23,119,232,0.18); padding: 0.6rem 0.75rem; font-size: 0.74rem; color: #2d4f7c; }
+.dark .pp-tip { background: rgba(78,168,255,0.08); border-color: rgba(78,168,255,0.2); color: #a9c4e8; }
+.pp-btn-primary {
+  width: 100%; border-radius: 0.85rem; padding: 0.65rem 1rem; font-size: 0.85rem; font-weight: 700; color: #fff;
+  background: linear-gradient(135deg, #1677e8, #4ea8ff); box-shadow: 0 10px 22px -10px rgba(22, 119, 232, 0.65);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+.pp-btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 14px 26px -10px rgba(22, 119, 232, 0.75); }
+.pp-btn-primary:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+.pp-btn-secondary {
+  width: 100%; border-radius: 0.85rem; padding: 0.65rem 1rem; font-size: 0.85rem; font-weight: 600; color: #0a5bc4;
+  background: rgba(255,255,255,0.7); border: 1px solid rgba(23,119,232,0.35);
+}
+.pp-btn-secondary:hover { background: #fff; }
+.dark .pp-btn-secondary { color: #8ed4ff; background: rgba(15,23,42,0.6); border-color: rgba(78,168,255,0.35); }
+
+/* ---- premium sidebar / header chrome ---- */
+.pp-sidebar { background: linear-gradient(180deg, #0757b8 0%, #087fe8 55%, #0a5bc4 100%); }
+.pp-sidebar-logo { background: linear-gradient(135deg, #ffffff, #cfe9ff); color: #0a5bc4; }
+.pp-nav-item { color: rgba(255, 255, 255, 0.82); transition: background 0.15s ease, color 0.15s ease; }
+.pp-nav-item:hover { background: rgba(255, 255, 255, 0.12); color: #ffffff; }
+.pp-nav-item--active {
+  background: linear-gradient(90deg, rgba(78, 168, 255, 0.95), rgba(14, 165, 233, 0.8));
+  border: 1px solid rgba(255, 255, 255, 0.35); color: #ffffff;
+  box-shadow: 0 6px 18px -6px rgba(4, 20, 54, 0.6), 0 0 14px rgba(78, 168, 255, 0.35);
+}
+.pp-sidebar-card { background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 0.9rem; color: #fff; }
+.pp-header { background: rgba(255, 255, 255, 0.78); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid rgba(148, 197, 255, 0.4); }
+.dark .pp-header { background: rgba(10, 16, 30, 0.75); border-color: rgba(56, 91, 156, 0.4); }
