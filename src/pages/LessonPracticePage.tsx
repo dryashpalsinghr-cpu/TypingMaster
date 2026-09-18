@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { RotateCcw } from "lucide-react";
-import { getLessonById, getLessonExercises } from "../data/lessons";
+import { RotateCcw, Clock } from "lucide-react";
+import { getLessonById, getLessonExercises, getLessonsForLayout } from "../data/lessons";
 import { getKeyboardLayout, getKeyboardRows } from "../keyboards";
 import { enQwertyLayout } from "../keyboards/enQwerty";
 import { resolveKeyOutput, findKeyForOutput, outputRequiresShift } from "../keyboards/resolveInput";
@@ -20,6 +20,11 @@ import type { AttemptResult } from "../types";
 // English key -> normal-label lookup, used as the optional physical-key
 // hint overlay when practicing Hindi InScript (spec section 11).
 const ENGLISH_HINTS = new Map(enQwertyLayout.keys.map((k) => [k.code, k.normalLabel]));
+
+// Strict per-lesson practice window (spec: "5-minute timer for the practice
+// lessons"). Once this elapses, typing stops and the Lesson Complete popup
+// appears, regardless of how many exercises inside the lesson were finished.
+const LESSON_DURATION_MS = 5 * 60 * 1000;
 
 export function LessonPracticePage() {
   const { lessonId } = useParams();
@@ -47,20 +52,70 @@ export function LessonPracticePage() {
   const [pressedCorrect, setPressedCorrect] = useState<boolean | null>(null);
   const [savedExercises, setSavedExercises] = useState<Set<number>>(new Set());
 
+  // Ordered list of lessons for this layout, so "Next Lesson" can move to the
+  // actual next lesson (not just the next exercise inside this one).
+  const layoutLessons = useMemo(() => getLessonsForLayout(lesson.layout), [lesson.layout]);
+  const nextLesson = useMemo(() => {
+    const idx = layoutLessons.findIndex((l) => l.id === lesson.id);
+    return idx >= 0 && idx < layoutLessons.length - 1 ? layoutLessons[idx + 1] : null;
+  }, [layoutLessons, lesson.id]);
+
+  // Strict 5-minute lesson timer (spec section: practice lesson timer).
+  const [remainingMs, setRemainingMs] = useState(LESSON_DURATION_MS);
+  const [lessonTimeUp, setLessonTimeUp] = useState(false);
+  const timerIntervalRef = useRef<number | null>(null);
+
   useEffect(() => {
     setExerciseIndex(0);
     setSavedExercises(new Set());
+    // A fresh lesson (or "Next Lesson") always gets a full, freshly-started
+    // 5-minute window.
+    setRemainingMs(LESSON_DURATION_MS);
+    setLessonTimeUp(false);
   }, [lesson.id]);
+
+  // Countdown itself: runs from the moment the lesson mounts/changes, using
+  // wall-clock time (not a naive per-tick decrement) so it stays accurate
+  // even if the tab is briefly backgrounded. Stops automatically once the
+  // 5 minutes are up.
+  useEffect(() => {
+    if (lessonTimeUp) return;
+    const start = performance.now();
+    timerIntervalRef.current = window.setInterval(() => {
+      const left = Math.max(0, LESSON_DURATION_MS - (performance.now() - start));
+      setRemainingMs(left);
+      if (left <= 0) {
+        if (timerIntervalRef.current) window.clearInterval(timerIntervalRef.current);
+        setLessonTimeUp(true);
+      }
+    }, 250);
+    return () => {
+      if (timerIntervalRef.current) window.clearInterval(timerIntervalRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lesson.id, lessonTimeUp]);
+
+  // Loads the next lesson (per spec: "Clicking Next Lesson should load the
+  // next lesson and automatically restart the 5-minute timer"). Navigating
+  // changes `lessonId`, which the effect above picks up to reset everything.
+  const goToNextLesson = useCallback(() => {
+    if (nextLesson) navigate(`/practice/${nextLesson.id}`);
+    else navigate("/learn");
+  }, [nextLesson, navigate]);
 
   // The very next character still needed to complete the current cell
   // (a Devanagari cell can require more than one physical keystroke).
+  // Once the lesson timer is up, typing is over, so no key/finger stays lit.
   const currentCell = snapshot.characters[snapshot.cursor];
   const nextNeededChar = currentCell ? currentCell.expected[currentCell.typedBuffer.length] ?? null : null;
-  const activeKeyDef = nextNeededChar ? findKeyForOutput(layout, nextNeededChar) : null;
-  const shiftRequired = nextNeededChar ? outputRequiresShift(layout, nextNeededChar) : false;
+  const activeKeyDef = !lessonTimeUp && nextNeededChar ? findKeyForOutput(layout, nextNeededChar) : null;
+  const shiftRequired = !lessonTimeUp && nextNeededChar ? outputRequiresShift(layout, nextNeededChar) : false;
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      // Hard stop: once the 5-minute lesson window elapses, no further
+      // keystrokes should register - the Lesson Complete popup takes over.
+      if (lessonTimeUp) return;
       if (e.key === "Shift") {
         setShiftActive(true);
         return;
@@ -87,7 +142,7 @@ export function LessonPracticePage() {
       setPressedCorrect(resolved === expectedNext);
       typeCharacter(resolved);
     },
-    [backspace, typeCharacter, snapshot, layout]
+    [backspace, typeCharacter, snapshot, layout, lessonTimeUp]
   );
 
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
@@ -236,15 +291,48 @@ export function LessonPracticePage() {
         <SessionSidePanel
           progressLabel={t("session_progress")}
           progressRatio={progressRatio}
-          timeLabel={t("session_time")}
-          timeValue={formatClock(snapshot.elapsedMs / 1000)}
+          timeLabel={t("session_time_left")}
+          timeValue={formatClock(remainingMs / 1000)}
+          timeUrgent={remainingMs <= 30_000}
           primaryLabel={isLastExercise ? t("practice_back_to_learn") : t("session_next")}
-          primaryDisabled={!snapshot.completed}
+          primaryDisabled={lessonTimeUp || !snapshot.completed}
           onPrimary={goToNextExercise}
           secondaryLabel={t("session_cancel")}
           onSecondary={() => navigate("/learn")}
         />
       </div>
+
+      {lessonTimeUp && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="lesson-complete-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-xl dark:bg-slate-900">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-300">
+              <Clock size={22} />
+            </div>
+            <h2 id="lesson-complete-title" className="text-lg font-bold font-devanagari">
+              {t("practice_lesson_complete_title")}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 font-devanagari">
+              {t("practice_lesson_complete_body")}
+            </p>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-left">
+              <MetricPill label={t("practice_gross_wpm")} value={Math.round(metrics.grossWpm)} />
+              <MetricPill label={t("practice_accuracy")} value={`${metrics.accuracy}%`} />
+              <MetricPill label={t("practice_errors")} value={snapshot.uncorrectedErrors} />
+            </div>
+            <button
+              onClick={goToNextLesson}
+              className="mt-5 w-full rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
+            >
+              {t("practice_next_lesson")}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
