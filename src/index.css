@@ -47,3 +47,17 @@ body { font-family: "Noto Sans", system-ui, sans-serif; }
   font-size: 0.7rem;
   color: #94a3b8;
 }
+/* The active-finger indicator dot rendered by HandGuide.tsx. Without this
+   rule the marker has no size/position and is invisible even though the
+   correct finger is being computed and passed in via `left`/`top`/
+   `backgroundColor` inline styles - this is what made the hand guide look
+   like it "wasn't highlighting". */
+.typing-hands__marker {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  transform: translate(-50%, -50%);
+  transition: left 0.12s ease-out, top 0.12s ease-out, background-color 0.12s ease-out;
+  z-index: 5;
+}
