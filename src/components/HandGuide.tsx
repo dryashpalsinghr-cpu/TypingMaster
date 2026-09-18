@@ -31,20 +31,21 @@ const FINGER_POSITIONS: Record<FingerId, { left: number; top: number }> = {
 const IMAGE_NATURAL_WIDTH = 1882;
 const IMAGE_NATURAL_HEIGHT = 824;
 
-// Calibrated against typing-hands-premium.png (1659x928) the same way the
-// map above is calibrated against typing-hands.png - percentages measured
-// against the actual image pixels, not the letterboxed container.
+// Calibrated against typing-hands-premium.png (1400x783) using per-pixel
+// alpha-channel scanning to find each finger's actual tip position in the
+// image (not guessed) - percentages measured against the actual image
+// pixels, not the letterboxed container.
 const PREMIUM_FINGER_POSITIONS: Record<FingerId, { left: number; top: number }> = {
-  "left-pinky": { left: 15.8, top: 15.2 },
-  "left-ring": { left: 25.0, top: 4.5 },
-  "left-middle": { left: 32.0, top: 1.9 },
-  "left-index": { left: 39.5, top: 7.0 },
-  "left-thumb": { left: 45.0, top: 44.3 },
-  "right-thumb": { left: 54.0, top: 44.3 },
-  "right-index": { left: 66.5, top: 7.5 },
-  "right-middle": { left: 74.0, top: 1.9 },
-  "right-ring": { left: 81.0, top: 5.0 },
-  "right-pinky": { left: 88.5, top: 15.2 },
+  "left-pinky": { left: 16.6, top: 16.5 },
+  "left-ring": { left: 24.6, top: 5.9 },
+  "left-middle": { left: 31.9, top: 2.0 },
+  "left-index": { left: 39.1, top: 9.2 },
+  "left-thumb": { left: 46.6, top: 43.5 },
+  "right-thumb": { left: 56.9, top: 43.5 },
+  "right-index": { left: 63.0, top: 10.0 },
+  "right-middle": { left: 70.0, top: 2.2 },
+  "right-ring": { left: 77.6, top: 6.5 },
+  "right-pinky": { left: 85.1, top: 17.0 },
 };
 const PREMIUM_IMAGE_NATURAL_WIDTH = 1400;
 const PREMIUM_IMAGE_NATURAL_HEIGHT = 783;
