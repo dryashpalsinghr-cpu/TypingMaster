@@ -63,7 +63,7 @@ export function VirtualKeyboard({
     return (
       <div className="pp-keyboard select-none" aria-label="Virtual keyboard">
         {rows.map((row, ri) => (
-          <div key={ri} className="mb-2 flex gap-1.5 last:mb-0">
+          <div key={ri} className="mb-2.5 flex gap-2 last:mb-0">
             {row.map((key) => {
               const isActive = key.code === activeCode;
               const isPressed = key.code === pressedCode;
@@ -76,7 +76,7 @@ export function VirtualKeyboard({
                   key={key.code}
                   data-key-code={key.code}
                   className={clsx(
-                    "pp-key h-11",
+                    "pp-key h-14 text-base sm:h-16 sm:text-lg",
                     key.isModifier && "pp-key--modifier",
                     isActive && "pp-key--active",
                     isPressed && pressedCorrect === true && "pp-key--correct",

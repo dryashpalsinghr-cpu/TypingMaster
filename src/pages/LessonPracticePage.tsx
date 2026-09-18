@@ -7,7 +7,7 @@ import { enQwertyLayout } from "../keyboards/enQwerty";
 import { resolveKeyOutput, findKeyForOutput, outputRequiresShift } from "../keyboards/resolveInput";
 import { useTypingEngine } from "../hooks/useTypingEngine";
 import { useT } from "../hooks/useTranslation";
-import { PracticeText } from "../components/PracticeText";
+import { DualTypingSequence } from "../components/practice/DualTypingSequence";
 import { VirtualKeyboard } from "../components/VirtualKeyboard";
 import { HandGuide } from "../components/HandGuide";
 import { SessionSidePanel, formatClock } from "../components/practice/SessionSidePanel";
@@ -301,8 +301,8 @@ export function LessonPracticePage() {
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_280px]">
         <div className="flex min-h-0 flex-col gap-3">
-          <div className="shrink-0">
-            <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} variant="premium" />
+          <div className="pp-glass shrink-0 basis-[18%]">
+            <DualTypingSequence characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} />
           </div>
           <div ref={keyboardStageRef} className="relative flex min-h-0 flex-1 flex-col gap-3">
             <FingerConnector
@@ -310,7 +310,7 @@ export function LessonPracticePage() {
               activeCode={activeKeyDef?.code ?? null}
               activeFinger={activeKeyDef?.finger ?? null}
             />
-            <div className="shrink-0">
+            <div className="shrink-0 basis-[58%]">
               <VirtualKeyboard
                 rows={rows}
                 activeCode={activeKeyDef?.code ?? null}
@@ -324,7 +324,7 @@ export function LessonPracticePage() {
                 variant="premium"
               />
             </div>
-            <div className="min-h-0 flex-1">
+            <div className="min-h-0 flex-1 basis-[42%]">
               <HandGuide activeFinger={activeKeyDef?.finger ?? null} variant="premium" />
             </div>
           </div>
