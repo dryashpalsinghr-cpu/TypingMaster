@@ -61,9 +61,9 @@ export function VirtualKeyboard({
 }: VirtualKeyboardProps) {
   if (variant === "premium") {
     return (
-      <div className="pp-keyboard select-none" aria-label="Virtual keyboard">
+      <div className="pp-keyboard min-w-0 select-none" aria-label="Virtual keyboard">
         {rows.map((row, ri) => (
-          <div key={ri} className="mb-2.5 flex gap-2 last:mb-0">
+          <div key={ri} className="mb-2.5 flex min-w-0 gap-2 last:mb-0">
             {row.map((key) => {
               const isActive = key.code === activeCode;
               const isPressed = key.code === pressedCode;

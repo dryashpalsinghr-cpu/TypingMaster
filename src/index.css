@@ -193,7 +193,7 @@ body { font-family: "Noto Sans", system-ui, sans-serif; }
 .dark .pp-keyboard { background: linear-gradient(180deg, #101b30, #0c1526); border-color: rgba(56, 91, 156, 0.5); }
 .pp-key {
   position: relative; border-radius: 9px; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  font-weight: 600; font-size: 0.95rem; color: #33415c;
+  font-weight: 600; font-size: 0.95rem; color: #33415c; min-width: 0; overflow: hidden; white-space: nowrap;
   background: linear-gradient(180deg, #ffffff 0%, #eef3fb 60%, #e1e8f4 100%);
   border: 1px solid rgba(148, 163, 184, 0.5);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 3px 0 rgba(148, 163, 184, 0.35), 0 6px 10px -4px rgba(30, 64, 120, 0.28);

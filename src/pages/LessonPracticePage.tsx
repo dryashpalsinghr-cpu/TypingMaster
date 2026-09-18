@@ -95,12 +95,15 @@ export function LessonPracticePage() {
     setLessonTimeUp(false);
   }, [lesson.id]);
 
-  // Countdown itself: runs from the moment the lesson mounts/changes, using
-  // wall-clock time (not a naive per-tick decrement) so it stays accurate
-  // even if the tab is briefly backgrounded. Stops automatically once the
-  // 5 minutes are up.
+  // Countdown itself: starts only once the user presses their first key
+  // (snapshot.startedAt flips from null the moment the typing engine
+  // records that first keystroke), not the instant the lesson mounts.
+  // Uses wall-clock time (not a naive per-tick decrement) so it stays
+  // accurate even if the tab is briefly backgrounded. Stops automatically
+  // once the 5 minutes are up.
   useEffect(() => {
     if (lessonTimeUp) return;
+    if (snapshot.startedAt === null) return;
     const start = performance.now();
     timerIntervalRef.current = window.setInterval(() => {
       const left = Math.max(0, LESSON_DURATION_MS - (performance.now() - start));
@@ -114,7 +117,7 @@ export function LessonPracticePage() {
       if (timerIntervalRef.current) window.clearInterval(timerIntervalRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lesson.id, lessonTimeUp]);
+  }, [lesson.id, lessonTimeUp, snapshot.startedAt]);
 
   // Loads the next lesson (per spec: "Clicking Next Lesson should load the
   // next lesson and automatically restart the 5-minute timer"). Navigating
@@ -241,7 +244,7 @@ export function LessonPracticePage() {
   const progressRatio = snapshot.characters.length ? snapshot.cursor / snapshot.characters.length : 0;
 
   return (
-    <div className="practice-premium mx-auto flex h-full max-w-[1800px] flex-col gap-4 p-4 practice-workspace">
+    <div className="practice-premium mx-auto flex h-full max-w-[1800px] flex-col gap-4 overflow-x-hidden p-4 practice-workspace">
       <div className="practice-premium__bg" aria-hidden="true" />
       <div className="practice-premium__grid" aria-hidden="true" />
       <div className="pp-motivation right-6 top-2 hidden text-sm lg:block" aria-hidden="true">
@@ -301,12 +304,12 @@ export function LessonPracticePage() {
         )}
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_280px]">
-        <div className="flex min-h-0 flex-col gap-3">
+      <div className="grid min-h-0 min-w-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="flex min-h-0 min-w-0 flex-col gap-3">
           <div className="pp-glass shrink-0 basis-[18%]">
             <DualTypingSequence characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} />
           </div>
-          <div ref={keyboardStageRef} className="relative flex min-h-0 flex-1 flex-col gap-3">
+          <div ref={keyboardStageRef} className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-3">
             <FingerConnector
               stageRef={keyboardStageRef}
               activeCode={activeKeyDef?.code ?? null}
