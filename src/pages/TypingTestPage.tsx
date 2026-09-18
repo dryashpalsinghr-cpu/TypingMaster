@@ -357,8 +357,8 @@ export function TypingTestPage() {
 
   // phase === "running"
   return (
-    <div className="mx-auto max-w-6xl space-y-4 p-6 practice-workspace">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto flex h-full max-w-6xl flex-col gap-3 p-4 practice-workspace">
+      <div className="flex shrink-0 items-center justify-between">
         <h1 className="text-lg font-bold font-devanagari">{t("test_title")}</h1>
         <button
           onClick={() => finishTest(durationMsRef.current - remainingMs)}
@@ -368,21 +368,27 @@ export function TypingTestPage() {
         </button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
-        <div className="space-y-4">
-          <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} />
-          <VirtualKeyboard
-            rows={rows}
-            activeCode={activeKeyDef?.code ?? null}
-            pressedCode={pressedCode}
-            pressedCorrect={pressedCorrect}
-            shiftActive={shiftActive}
-            shiftRequired={shiftRequired}
-            showFingerColors
-            devanagari={isHindi}
-            physicalHints={isHindi ? ENGLISH_HINTS : undefined}
-          />
-          <HandGuide activeFinger={activeKeyDef?.finger ?? null} />
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_260px]">
+        <div className="flex min-h-0 flex-col gap-3">
+          <div className="shrink-0">
+            <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} />
+          </div>
+          <div className="shrink-0">
+            <VirtualKeyboard
+              rows={rows}
+              activeCode={activeKeyDef?.code ?? null}
+              pressedCode={pressedCode}
+              pressedCorrect={pressedCorrect}
+              shiftActive={shiftActive}
+              shiftRequired={shiftRequired}
+              showFingerColors
+              devanagari={isHindi}
+              physicalHints={isHindi ? ENGLISH_HINTS : undefined}
+            />
+          </div>
+          <div className="min-h-0 flex-1">
+            <HandGuide activeFinger={activeKeyDef?.finger ?? null} />
+          </div>
         </div>
 
         <SessionSidePanel

@@ -159,8 +159,8 @@ export function LessonPracticePage() {
   const progressRatio = snapshot.characters.length ? snapshot.cursor / snapshot.characters.length : 0;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 p-6 practice-workspace">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto flex h-full max-w-6xl flex-col gap-4 p-4 practice-workspace">
+      <div className="flex shrink-0 items-center justify-between">
         <div>
           <div className="text-xs font-medium uppercase text-brand-600 font-devanagari">
             {interfaceLanguage === "hi" ? layout.labelHi : layout.label}
@@ -182,7 +182,7 @@ export function LessonPracticePage() {
         </button>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 sm:grid-cols-5">
+      <div className="grid shrink-0 grid-cols-3 gap-4 sm:grid-cols-5">
         <MetricPill label={t("practice_gross_wpm")} value={Math.round(metrics.grossWpm)} />
         <MetricPill label={t("practice_net_wpm")} value={Math.round(metrics.netWpm)} />
         <MetricPill label={t("practice_accuracy")} value={`${metrics.accuracy}%`} />
@@ -191,7 +191,7 @@ export function LessonPracticePage() {
       </div>
 
       {isHindi && (
-        <p className="text-xs text-slate-400 font-devanagari">
+        <p className="shrink-0 text-xs text-slate-400 font-devanagari">
           {t("practice_input_mode")}: {layout.labelHi} — यह ऐप कुंजी-कोड आधारित मैपिंग उपयोग करता है, इसलिए Windows में
           InScript लेआउट सक्रिय किए बिना भी टाइपिंग सही काम करती है।{" "}
           <button onClick={() => navigate("/keyboard-chart")} className="underline">
@@ -201,7 +201,7 @@ export function LessonPracticePage() {
       )}
 
       {snapshot.completed && (
-        <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-green-800 dark:border-green-900 dark:bg-green-900/20 dark:text-green-300">
+        <div className="shrink-0 rounded-xl border border-green-200 bg-green-50 p-4 text-green-800 dark:border-green-900 dark:bg-green-900/20 dark:text-green-300">
           <p className="font-semibold">
             {metrics.grossWpm >= lesson.passWpm && metrics.accuracy >= lesson.passAccuracy
               ? t("practice_lesson_passed")
@@ -210,21 +210,27 @@ export function LessonPracticePage() {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_260px]">
-        <div className="space-y-4">
-          <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} />
-          <VirtualKeyboard
-            rows={rows}
-            activeCode={activeKeyDef?.code ?? null}
-            pressedCode={pressedCode}
-            pressedCorrect={pressedCorrect}
-            shiftActive={shiftActive}
-            shiftRequired={shiftRequired}
-            showFingerColors
-            devanagari={isHindi}
-            physicalHints={isHindi ? ENGLISH_HINTS : undefined}
-          />
-          <HandGuide activeFinger={activeKeyDef?.finger ?? null} />
+      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_260px]">
+        <div className="flex min-h-0 flex-col gap-3">
+          <div className="shrink-0">
+            <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} />
+          </div>
+          <div className="shrink-0">
+            <VirtualKeyboard
+              rows={rows}
+              activeCode={activeKeyDef?.code ?? null}
+              pressedCode={pressedCode}
+              pressedCorrect={pressedCorrect}
+              shiftActive={shiftActive}
+              shiftRequired={shiftRequired}
+              showFingerColors
+              devanagari={isHindi}
+              physicalHints={isHindi ? ENGLISH_HINTS : undefined}
+            />
+          </div>
+          <div className="min-h-0 flex-1">
+            <HandGuide activeFinger={activeKeyDef?.finger ?? null} />
+          </div>
         </div>
 
         <SessionSidePanel
