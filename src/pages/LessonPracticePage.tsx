@@ -312,7 +312,7 @@ export function LessonPracticePage() {
               activeCode={activeKeyDef?.code ?? null}
               activeFinger={activeKeyDef?.finger ?? null}
             />
-            <div className="shrink-0 basis-[58%]">
+            <div className="shrink-0 basis-[46%]">
               <VirtualKeyboard
                 rows={rows}
                 activeCode={activeKeyDef?.code ?? null}
@@ -326,7 +326,7 @@ export function LessonPracticePage() {
                 variant="premium"
               />
             </div>
-            <div className="min-h-0 flex-1 basis-[42%]">
+            <div className="min-h-0 flex-1 basis-[54%]">
               <HandGuide activeFinger={activeKeyDef?.finger ?? null} variant="premium" />
             </div>
           </div>
