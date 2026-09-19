@@ -1,6 +1,7 @@
 import clsx from "clsx";
 import { Check } from "lucide-react";
 import type { CharacterState } from "../../engine/typingEngine";
+import { krutiKeyLabel } from "../../converter/krutiDevCore";
 
 /**
  * Redesigned Practice-screen typing sequence: instead of the full lesson
@@ -28,7 +29,7 @@ function buildWindow(characters: CharacterState[], cursor: number, size: number)
   return slots;
 }
 
-function SequenceBox({ slot, cursor, devanagari }: { slot: SequenceSlot; cursor: number; devanagari?: boolean }) {
+function SequenceBox({ slot, cursor, devanagari, krutiDev }: { slot: SequenceSlot; cursor: number; devanagari?: boolean; krutiDev?: boolean }) {
   const { index, char } = slot;
   const isSpace = char?.expected === " ";
   const isCurrent = index === cursor && !!char;
@@ -53,7 +54,7 @@ function SequenceBox({ slot, cursor, devanagari }: { slot: SequenceSlot; cursor:
         isSpace ? (
           <span className="pp-seq-key__label">Space</span>
         ) : (
-          <span>{char.expected}</span>
+          <span>{krutiDev ? krutiKeyLabel(char.expected) : char.expected}</span>
         )
       ) : null}
       {isCompleted && <Check size={12} className="pp-seq-key__check" />}
@@ -65,11 +66,14 @@ export function DualTypingSequence({
   characters,
   cursor,
   devanagari,
+  krutiDev,
   groupSize = 6,
 }: {
   characters: CharacterState[];
   cursor: number;
   devanagari?: boolean;
+  /** Kruti Dev: each box shows the Devanagari shape the key draws (d -> क). */
+  krutiDev?: boolean;
   groupSize?: number;
 }) {
   const slots = buildWindow(characters, cursor, groupSize * 2);
@@ -80,13 +84,13 @@ export function DualTypingSequence({
     <div className="pp-seq" aria-label="Upcoming typing sequence">
       <div className="pp-seq-group">
         {left.map((slot) => (
-          <SequenceBox key={slot.index} slot={slot} cursor={cursor} devanagari={devanagari} />
+          <SequenceBox key={slot.index} slot={slot} cursor={cursor} devanagari={devanagari} krutiDev={krutiDev} />
         ))}
       </div>
       <div className="pp-seq-divider" aria-hidden="true" />
       <div className="pp-seq-group">
         {right.map((slot) => (
-          <SequenceBox key={slot.index} slot={slot} cursor={cursor} devanagari={devanagari} />
+          <SequenceBox key={slot.index} slot={slot} cursor={cursor} devanagari={devanagari} krutiDev={krutiDev} />
         ))}
       </div>
     </div>

@@ -137,7 +137,8 @@ export const KRUTIDEV_010_KEYS: LegacyKeyMapping[] = mk([
   ["v", false, "अ", "अ", "vowel"],
   ["b", false, "इ", "इ", "vowel"],
   ["m", false, "उ", "उ", "vowel"],
-  [",", false, "ऋ", "ऋ", "vowel"],
+  [",", false, "ए", "ए", "vowel"],
+  ["_", true, "ऋ", "ऋ", "vowel"],
   // Full consonants
   ["d", false, "क", "क", "consonant"],
   ["x", false, "ग", "ग", "consonant"],
@@ -173,29 +174,17 @@ export const KRUTIDEV_010_KEYS: LegacyKeyMapping[] = mk([
   ["S", true, "ै", "ै", "matra"],
   ["W", true, "ॅ", "ॅ", "matra"],
   ["a", false, "ं", "ं (anusvara)", "matra"],
-  ["^", true, "ँ", "ँ (chandrabindu)", "matra"],
   ["%", true, "ः", "ः (visarga)", "sign"],
   ["~", true, "्", "् (halant)", "matra"],
   ["A", true, "।", "। (danda)", "punct"],
-  // Devanagari digits
-  ["0", false, "०", "०", "digit"],
-  ["1", false, "१", "१", "digit"],
-  ["2", false, "२", "२", "digit"],
-  ["3", false, "३", "३", "digit"],
-  ["4", false, "४", "४", "digit"],
-  ["5", false, "५", "५", "digit"],
-  ["6", false, "६", "६", "digit"],
-  ["7", false, "७", "७", "digit"],
-  ["8", false, "८", "८", "digit"],
-  ["9", false, "९", "९", "digit"],
+  // Digits: Kruti Dev 010 shows normal 0-9 for the number keys (no Devanagari digits).
 ]);
 
 // Multi-keystroke Kruti Dev sequences (type the `code` characters in order).
 export const KRUTIDEV_010_SEQUENCES: { code: string; unicode: string; label: string }[] = [
   { code: "vk", unicode: "आ", label: "आ" },
   { code: "bZ", unicode: "ई", label: "ई" },
-  { code: ",s", unicode: "ए", label: "ए" },
-  { code: ",S", unicode: "ऐ", label: "ऐ" },
+  { code: ",s", unicode: "ऐ", label: "ऐ" },
   { code: "vks", unicode: "ओ", label: "ओ" },
   { code: "vkS", unicode: "औ", label: "औ" },
   { code: "ks", unicode: "ो", label: "ो (matra)" },

@@ -62,6 +62,7 @@ export function LessonPracticePage() {
   const layout = getKeyboardLayout(lesson.layout);
   const rows = getKeyboardRows(lesson.layout);
   const isHindi = lesson.language === "hi";
+  const isKruti = lesson.layout === "kruti-dev-010";
 
   const { snapshot, typeCharacter, backspace, restart, metrics } = useTypingEngine(exercise.text, {
     strictMode: false,
@@ -283,7 +284,16 @@ export function LessonPracticePage() {
           <PremiumStatCard icon={CheckCircle2} label={t("practice_progress")} value={`${Math.round(progressRatio * 100)}%`} color="#8b5cf6" />
         </div>
 
-        {isHindi && (
+        {isKruti && (
+          <p className="pp-glass px-4 py-2 text-xs text-[#2d4f7c] dark:text-slate-400 font-devanagari">
+            कृति देव 010: कीबोर्ड पर सामान्य अंग्रेज़ी अक्षर टाइप होते हैं और Kruti Dev फ़ॉन्ट उन्हें हिंदी की शक्ल देता है।
+            हर बॉक्स में वही हिंदी अक्षर दिखता है जो वह key बनाएगी। परीक्षा-कंप्यूटर पर यही फ़ॉन्ट होता है।{" "}
+            <button onClick={() => navigate("/font-setup")} className="underline">
+              Font Setup
+            </button>
+          </p>
+        )}
+        {isHindi && !isKruti && (
           <p className="pp-glass px-4 py-2 text-xs text-[#2d4f7c] dark:text-slate-400 font-devanagari">
             {t("practice_input_mode")}: {layout.labelHi} — यह ऐप कुंजी-कोड आधारित मैपिंग उपयोग करता है, इसलिए Windows में
             InScript लेआउट सक्रिय किए बिना भी टाइपिंग सही काम करती है।{" "}
@@ -307,7 +317,7 @@ export function LessonPracticePage() {
       <div className="grid min-h-0 min-w-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="flex min-h-0 min-w-0 flex-col gap-3">
           <div className="pp-glass shrink-0 basis-[18%]">
-            <DualTypingSequence characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} />
+            <DualTypingSequence characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} krutiDev={isKruti} />
           </div>
           <div ref={keyboardStageRef} className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-3">
             <FingerConnector

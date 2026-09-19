@@ -15,7 +15,8 @@ import { VirtualKeyboard } from "../components/VirtualKeyboard";
 import { HandGuide } from "../components/HandGuide";
 import { SessionSidePanel, formatClock } from "../components/practice/SessionSidePanel";
 import { saveAttempt } from "../services/statsService";
-import type { AttemptResult, TypingLanguage } from "../types";
+import type { AttemptResult, KeyboardLayoutId, TypingLanguage } from "../types";
+import { unicodeToKrutiDev, untypableChars } from "../converter/krutiDevCore";
 
 const ENGLISH_HINTS = new Map(enQwertyLayout.keys.map((k) => [k.code, k.normalLabel]));
 
@@ -29,6 +30,7 @@ export function TypingTestPage() {
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [testLanguage, setTestLanguage] = useState<TypingLanguage>("en");
+  const [hindiLayout, setHindiLayout] = useState<"unicode-inscript" | "kruti-dev-010">("unicode-inscript");
   const availableTexts = useMemo(() => getTestTextsForLanguage(testLanguage), [testLanguage]);
   const [textId, setTextId] = useState<string>(availableTexts[0]?.id ?? "");
   const [durationMin, setDurationMin] = useState<number>(5);
@@ -44,11 +46,20 @@ export function TypingTestPage() {
 
   const selectedText: TestText | undefined = availableTexts.find((x) => x.id === textId) ?? availableTexts[0];
 
-  const layout = selectedText ? getKeyboardLayout(selectedText.layout) : null;
-  const rows = selectedText ? getKeyboardRows(selectedText.layout) : [];
   const isHindi = testLanguage === "hi";
+  // Hindi passages are stored as Unicode. For Kruti Dev 010 they are converted to
+  // the ASCII keystrokes you actually type, and the layout switches with it.
+  const layoutId: KeyboardLayoutId = isHindi ? hindiLayout : selectedText?.layout ?? "en-qwerty";
+  const isKruti = layoutId === "kruti-dev-010";
+  const layout = selectedText ? getKeyboardLayout(layoutId) : null;
+  const rows = selectedText ? getKeyboardRows(layoutId) : [];
+  const passage = useMemo(
+    () => (!selectedText ? "" : isKruti ? unicodeToKrutiDev(selectedText.text) : selectedText.text),
+    [selectedText, isKruti]
+  );
+  const untypable = useMemo(() => (isKruti ? untypableChars(passage) : []), [passage, isKruti]);
 
-  const { snapshot, typeCharacter, backspace, restart } = useTypingEngine(selectedText?.text ?? "", {
+  const { snapshot, typeCharacter, backspace, restart } = useTypingEngine(passage, {
     strictMode: false,
     backspaceAllowed: true,
   });
@@ -175,7 +186,7 @@ export function TypingTestPage() {
     void saveAttempt({
       profileId: activeProfile.id,
       language: testLanguage,
-      layout: selectedText.layout,
+      layout: layoutId,
       testId: selectedText.id,
       kind: "test",
       dateTime: new Date().toISOString(),
@@ -221,11 +232,46 @@ export function TypingTestPage() {
                       : "border-slate-300 text-slate-600 dark:border-slate-600 dark:text-slate-300"
                   }`}
                 >
-                  {lang === "en" ? "English (QWERTY)" : "हिन्दी (InScript)"}
+                  {lang === "en" ? "English (QWERTY)" : "हिन्दी"}
                 </button>
               ))}
             </div>
           </div>
+
+          {isHindi && (
+            <div>
+              <label className="mb-1 block text-xs font-medium uppercase text-slate-400">कीबोर्ड / Keyboard</label>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  ["unicode-inscript", "InScript (Unicode)"],
+                  ["kruti-dev-010", "Kruti Dev 010"],
+                ] as const).map(([id, label]) => (
+                  <button
+                    key={id}
+                    onClick={() => setHindiLayout(id)}
+                    className={`rounded-lg border px-4 py-2 text-sm font-medium ${
+                      hindiLayout === id
+                        ? "border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"
+                        : "border-slate-300 text-slate-600 dark:border-slate-600 dark:text-slate-300"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {isKruti && (
+                <p className="mt-2 text-xs text-slate-500 font-devanagari dark:text-slate-400">
+                  पैराग्राफ़ Kruti Dev के key-कोड में बदलकर दिखाया जाएगा (जैसे भारत = Hkkjr)। असली हिंदी रूप ऊपर अलग पंक्ति में दिखेगा।
+                  परीक्षा जैसा दृश्य पाने के लिए Kruti Dev 010 फ़ॉन्ट इंस्टॉल हो — देखें Font Setup।
+                </p>
+              )}
+              {untypable.length > 0 && (
+                <p className="mt-2 rounded-md bg-amber-50 p-2 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 font-devanagari">
+                  इस पैराग्राफ़ में कुछ चिह्न ({untypable.join(" ")}) सामान्य कीबोर्ड से टाइप नहीं हो सकते। कोई दूसरा पैराग्राफ़ चुनें।
+                </p>
+              )}
+            </div>
+          )}
 
           <div>
             <label className="mb-1 block text-xs font-medium uppercase text-slate-400">{t("test_passage")}</label>
@@ -236,7 +282,7 @@ export function TypingTestPage() {
             >
               {availableTexts.map((x) => (
                 <option key={x.id} value={x.id}>
-                  {(interfaceLanguage === "hi" ? x.titleHi : x.title)} · {x.wordCount} {t("test_words")}
+                  {(interfaceLanguage === "hi" ? x.titleHi : x.title)} · {x.wordCount} {t("test_words")}{isKruti && untypableChars(unicodeToKrutiDev(x.text)).length > 0 ? " ⚠" : ""}
                 </option>
               ))}
             </select>
@@ -371,7 +417,7 @@ export function TypingTestPage() {
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_260px]">
         <div className="flex min-h-0 flex-col gap-3">
           <div className="shrink-0">
-            <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} />
+            <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} krutiDev={isKruti} unicodePreview={selectedText?.text} />
           </div>
           <div className="shrink-0">
             <VirtualKeyboard
