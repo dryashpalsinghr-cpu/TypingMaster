@@ -24,7 +24,18 @@ export function useTypingEngine(expectedText: string, config: EngineConfig) {
     setSnapshot(engineRef.current.getSnapshot());
   }, [expectedText]);
 
+  // Load a (possibly identical) text into the engine right now, in the same
+  // React batch as the caller's other state updates. Used by the timed lesson
+  // page to roll straight into the next exercise round without a stale
+  // "completed" frame - and it also works when the next text is the same as
+  // the current one (single-exercise lessons), where the effect above would
+  // not fire.
+  const loadText = useCallback((text: string) => {
+    engineRef.current.reset(text);
+    setSnapshot(engineRef.current.getSnapshot());
+  }, []);
+
   const metrics = calculateMetrics(snapshot, { includeKdph: true });
 
-  return { snapshot, typeCharacter, backspace, restart, metrics };
+  return { snapshot, typeCharacter, backspace, restart, loadText, metrics };
 }
