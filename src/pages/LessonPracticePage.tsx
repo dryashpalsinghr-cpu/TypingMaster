@@ -6,6 +6,7 @@ import { getKeyboardLayout, getKeyboardRows } from "../keyboards";
 import { enQwertyLayout } from "../keyboards/enQwerty";
 import { resolveKeyOutput, findKeyForOutput, outputRequiresShift } from "../keyboards/resolveInput";
 import { useTypingEngine } from "../hooks/useTypingEngine";
+import { calculateMetrics } from "../engine/typingEngine";
 import { useT } from "../hooks/useTranslation";
 import { DualTypingSequence } from "../components/practice/DualTypingSequence";
 import { VirtualKeyboard } from "../components/VirtualKeyboard";
@@ -44,7 +45,9 @@ const ENGLISH_HINTS = new Map(enQwertyLayout.keys.map((k) => [k.code, k.normalLa
 
 // Strict per-lesson practice window (spec: "5-minute timer for the practice
 // lessons"). Once this elapses, typing stops and the Lesson Complete popup
-// appears, regardless of how many exercises inside the lesson were finished.
+// appears. The lesson text never "runs out" before that: when the learner
+// finishes the last exercise early, the exercises simply loop again (see
+// advanceChunk below) until the full 5 minutes are used.
 const LESSON_DURATION_MS = 5 * 60 * 1000;
 
 export function LessonPracticePage() {
@@ -56,7 +59,11 @@ export function LessonPracticePage() {
 
   const lesson = getLessonById(lessonId) ?? getLessonById("en-b-01")!;
   const exercises = useMemo(() => getLessonExercises(lesson), [lesson]);
-  const [exerciseIndex, setExerciseIndex] = useState(0);
+  // `chunk` counts every exercise the learner has been given in this lesson
+  // (0, 1, 2, ...). The exercise shown is chunk % exercises.length, so the
+  // lesson text loops for as long as the 5-minute timer is still running.
+  const [chunk, setChunk] = useState(0);
+  const exerciseIndex = chunk % exercises.length;
   const exercise = exercises[exerciseIndex];
 
   const layout = getKeyboardLayout(lesson.layout);
@@ -64,7 +71,7 @@ export function LessonPracticePage() {
   const isHindi = lesson.language === "hi";
   const isKruti = lesson.layout === "kruti-dev-010";
 
-  const { snapshot, typeCharacter, backspace, restart, metrics } = useTypingEngine(exercise.text, {
+  const { snapshot, typeCharacter, backspace, restart, loadText, metrics } = useTypingEngine(exercise.text, {
     strictMode: false,
     backspaceAllowed: true,
   });
@@ -73,6 +80,12 @@ export function LessonPracticePage() {
   const [pressedCode, setPressedCode] = useState<string | null>(null);
   const [pressedCorrect, setPressedCorrect] = useState<boolean | null>(null);
   const [savedExercises, setSavedExercises] = useState<Set<number>>(new Set());
+  // Totals of all finished/skipped chunks in this lesson session, so the WPM /
+  // accuracy / error cards keep counting across rounds instead of resetting.
+  const [carry, setCarry] = useState({ keystrokes: 0, errors: 0, ms: 0 });
+  // Result of the round that just finished (shown as a small banner while the
+  // next round is already running).
+  const [lastRoundPassed, setLastRoundPassed] = useState<boolean | null>(null);
 
   // Ordered list of lessons for this layout, so "Next Lesson" can move to the
   // actual next lesson (not just the next exercise inside this one).
@@ -85,40 +98,63 @@ export function LessonPracticePage() {
   // Strict 5-minute lesson timer (spec section: practice lesson timer).
   const [remainingMs, setRemainingMs] = useState(LESSON_DURATION_MS);
   const [lessonTimeUp, setLessonTimeUp] = useState(false);
-  const timerIntervalRef = useRef<number | null>(null);
+  // The countdown starts once, at the first key of the lesson, and is NOT
+  // restarted when the next exercise round begins.
+  const [lessonStarted, setLessonStarted] = useState(false);
+  const lessonStartRef = useRef<number | null>(null);
 
   useEffect(() => {
-    setExerciseIndex(0);
+    setChunk(0);
     setSavedExercises(new Set());
+    setCarry({ keystrokes: 0, errors: 0, ms: 0 });
+    setLastRoundPassed(null);
     // A fresh lesson (or "Next Lesson") always gets a full, freshly-started
     // 5-minute window.
+    lessonStartRef.current = null;
+    setLessonStarted(false);
     setRemainingMs(LESSON_DURATION_MS);
     setLessonTimeUp(false);
   }, [lesson.id]);
 
-  // Countdown itself: starts only once the user presses their first key
-  // (snapshot.startedAt flips from null the moment the typing engine
-  // records that first keystroke), not the instant the lesson mounts.
-  // Uses wall-clock time (not a naive per-tick decrement) so it stays
-  // accurate even if the tab is briefly backgrounded. Stops automatically
-  // once the 5 minutes are up.
+  // Countdown itself: starts only once the user presses their first key of
+  // the lesson. Uses wall-clock time (not a naive per-tick decrement) so it
+  // stays accurate even if the tab is briefly backgrounded. Stops
+  // automatically once the 5 minutes are up.
   useEffect(() => {
-    if (lessonTimeUp) return;
-    if (snapshot.startedAt === null) return;
-    const start = performance.now();
-    timerIntervalRef.current = window.setInterval(() => {
+    if (lessonTimeUp || !lessonStarted) return;
+    const start = lessonStartRef.current ?? performance.now();
+    const id = window.setInterval(() => {
       const left = Math.max(0, LESSON_DURATION_MS - (performance.now() - start));
       setRemainingMs(left);
       if (left <= 0) {
-        if (timerIntervalRef.current) window.clearInterval(timerIntervalRef.current);
+        window.clearInterval(id);
         setLessonTimeUp(true);
       }
     }, 250);
-    return () => {
-      if (timerIntervalRef.current) window.clearInterval(timerIntervalRef.current);
-    };
+    return () => window.clearInterval(id);
+  }, [lesson.id, lessonTimeUp, lessonStarted]);
+
+  // Roll into the next exercise (looping back to the first one after the
+  // last). Everything typed so far is added to the session totals.
+  const advanceChunk = useCallback(() => {
+    setCarry((c) => ({
+      keystrokes: c.keystrokes + snapshot.totalKeystrokes,
+      errors: c.errors + snapshot.uncorrectedErrors,
+      ms: c.ms + snapshot.elapsedMs,
+    }));
+    const nextIndex = (chunk + 1) % exercises.length;
+    setChunk(chunk + 1);
+    loadText(exercises[nextIndex].text);
+  }, [chunk, exercises, loadText, snapshot.totalKeystrokes, snapshot.uncorrectedErrors, snapshot.elapsedMs]);
+
+  // Exercise finished but the 5 minutes are not over yet -> keep going with
+  // the next round immediately, so the lesson never ends early.
+  useEffect(() => {
+    if (!snapshot.completed || lessonTimeUp) return;
+    setLastRoundPassed(metrics.grossWpm >= lesson.passWpm && metrics.accuracy >= lesson.passAccuracy);
+    advanceChunk();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lesson.id, lessonTimeUp, snapshot.startedAt]);
+  }, [snapshot.completed]);
 
   // Loads the next lesson (per spec: "Clicking Next Lesson should load the
   // next lesson and automatically restart the 5-minute timer"). Navigating
@@ -168,6 +204,11 @@ export function LessonPracticePage() {
       if (resolved === null) return;
       e.preventDefault();
 
+      if (lessonStartRef.current === null) {
+        lessonStartRef.current = performance.now();
+        setLessonStarted(true);
+      }
+
       const expectedNext = snapshot.characters[snapshot.cursor]?.expected[snapshot.characters[snapshot.cursor].typedBuffer.length];
       setPressedCode(e.code);
       setPressedCorrect(resolved === expectedNext);
@@ -194,8 +235,8 @@ export function LessonPracticePage() {
   const isLastExercise = exerciseIndex === exercises.length - 1;
 
   useEffect(() => {
-    if (!snapshot.completed || savedExercises.has(exerciseIndex) || !activeProfile?.id) return;
-    setSavedExercises((s) => new Set(s).add(exerciseIndex));
+    if (!snapshot.completed || savedExercises.has(chunk) || !activeProfile?.id) return;
+    setSavedExercises((s) => new Set(s).add(chunk));
 
     const keyStats: AttemptResult["keyStats"] = {};
     for (const c of snapshot.characters) {
@@ -235,12 +276,20 @@ export function LessonPracticePage() {
       void touchProfileActivity(activeProfile.id, lesson.id);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [snapshot.completed, exerciseIndex, activeProfile, lesson, metrics, snapshot, isLastExercise]);
+  }, [snapshot.completed, chunk, activeProfile, lesson, metrics, snapshot, isLastExercise]);
 
-  const goToNextExercise = () => {
-    if (!isLastExercise) setExerciseIndex((i) => i + 1);
-    else navigate("/learn");
-  };
+  // Session-wide numbers (all rounds so far + the round in progress) for the
+  // stat cards and the Lesson Complete popup.
+  const sessionMetrics = calculateMetrics(
+    {
+      ...snapshot,
+      totalKeystrokes: carry.keystrokes + snapshot.totalKeystrokes,
+      uncorrectedErrors: carry.errors + snapshot.uncorrectedErrors,
+      elapsedMs: carry.ms + snapshot.elapsedMs,
+    },
+    { includeKdph: true }
+  );
+  const sessionErrors = carry.errors + snapshot.uncorrectedErrors;
 
   const progressRatio = snapshot.characters.length ? snapshot.cursor / snapshot.characters.length : 0;
 
@@ -277,10 +326,10 @@ export function LessonPracticePage() {
         </div>
 
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
-          <PremiumStatCard icon={Gauge} label={t("practice_gross_wpm")} value={Math.round(metrics.grossWpm)} color="#1677e8" />
-          <PremiumStatCard icon={TrendingUp} label={t("practice_net_wpm")} value={Math.round(metrics.netWpm)} color="#0ea5e9" />
-          <PremiumStatCard icon={Target} label={t("practice_accuracy")} value={`${metrics.accuracy}%`} color="#22c55e" />
-          <PremiumStatCard icon={AlertTriangle} label={t("practice_errors")} value={snapshot.uncorrectedErrors} color="#ef4444" />
+          <PremiumStatCard icon={Gauge} label={t("practice_gross_wpm")} value={Math.round(sessionMetrics.grossWpm)} color="#1677e8" />
+          <PremiumStatCard icon={TrendingUp} label={t("practice_net_wpm")} value={Math.round(sessionMetrics.netWpm)} color="#0ea5e9" />
+          <PremiumStatCard icon={Target} label={t("practice_accuracy")} value={`${sessionMetrics.accuracy}%`} color="#22c55e" />
+          <PremiumStatCard icon={AlertTriangle} label={t("practice_errors")} value={sessionErrors} color="#ef4444" />
           <PremiumStatCard icon={CheckCircle2} label={t("practice_progress")} value={`${Math.round(progressRatio * 100)}%`} color="#8b5cf6" />
         </div>
 
@@ -303,12 +352,10 @@ export function LessonPracticePage() {
           </p>
         )}
 
-        {snapshot.completed && (
+        {lastRoundPassed !== null && !lessonTimeUp && (
           <div className="rounded-xl border border-green-200 bg-green-50/90 p-4 text-green-800 dark:border-green-900 dark:bg-green-900/20 dark:text-green-300">
             <p className="font-semibold">
-              {metrics.grossWpm >= lesson.passWpm && metrics.accuracy >= lesson.passAccuracy
-                ? t("practice_lesson_passed")
-                : t("practice_lesson_retry")}
+              {lastRoundPassed ? t("practice_lesson_passed") : t("practice_lesson_retry")}
             </p>
           </div>
         )}
@@ -355,9 +402,9 @@ export function LessonPracticePage() {
           currentKeyLabel={currentKeyLabel}
           currentKeyCaption="Current Key"
           tip={currentTip}
-          primaryLabel={isLastExercise ? t("practice_back_to_learn") : t("session_next")}
-          primaryDisabled={lessonTimeUp || !snapshot.completed}
-          onPrimary={goToNextExercise}
+          primaryLabel={t("session_next")}
+          primaryDisabled={lessonTimeUp}
+          onPrimary={advanceChunk}
           secondaryLabel={t("session_cancel")}
           onSecondary={() => navigate("/learn")}
         />
@@ -381,9 +428,9 @@ export function LessonPracticePage() {
               {t("practice_lesson_complete_body")}
             </p>
             <div className="mt-4 grid grid-cols-3 gap-2 text-left">
-              <PremiumStatCard icon={Gauge} label={t("practice_gross_wpm")} value={Math.round(metrics.grossWpm)} color="#1677e8" />
-              <PremiumStatCard icon={Target} label={t("practice_accuracy")} value={`${metrics.accuracy}%`} color="#22c55e" />
-              <PremiumStatCard icon={AlertTriangle} label={t("practice_errors")} value={snapshot.uncorrectedErrors} color="#ef4444" />
+              <PremiumStatCard icon={Gauge} label={t("practice_gross_wpm")} value={Math.round(sessionMetrics.grossWpm)} color="#1677e8" />
+              <PremiumStatCard icon={Target} label={t("practice_accuracy")} value={`${sessionMetrics.accuracy}%`} color="#22c55e" />
+              <PremiumStatCard icon={AlertTriangle} label={t("practice_errors")} value={sessionErrors} color="#ef4444" />
             </div>
             <button onClick={goToNextLesson} className="pp-btn-primary mt-5">
               {t("practice_next_lesson")}
