@@ -69,6 +69,7 @@ export function TypingTestPage() {
   const [pressedCorrect, setPressedCorrect] = useState<boolean | null>(null);
   const [remainingMs, setRemainingMs] = useState(0);
   const [finishedEarly, setFinishedEarly] = useState(false);
+  const [usedMs, setUsedMs] = useState(0);
   const [finalMetrics, setFinalMetrics] = useState<ReturnType<typeof calculateMetrics> | null>(null);
   const [savedOnce, setSavedOnce] = useState(false);
   const durationMsRef = useRef(0);
@@ -85,7 +86,9 @@ export function TypingTestPage() {
 
   const finishTest = useCallback((usedMs: number) => {
     if (timerRef.current) window.clearInterval(timerRef.current);
-    const finalSnapshot = { ...snapshotRef.current, elapsedMs: Math.max(usedMs, 1000) };
+    const actualUsedMs = Math.max(usedMs, 1000);
+    setUsedMs(actualUsedMs);
+    const finalSnapshot = { ...snapshotRef.current, elapsedMs: actualUsedMs };
     setFinalMetrics(calculateMetrics(finalSnapshot, { includeKdph: true }));
     setPhase("results");
   }, []);
@@ -190,7 +193,7 @@ export function TypingTestPage() {
       testId: selectedText.id,
       kind: "test",
       dateTime: new Date().toISOString(),
-      durationSec: durationMin * 60,
+      durationSec: usedMs / 1000,
       totalKeystrokes: snapshot.totalKeystrokes,
       correctKeystrokes: snapshot.totalKeystrokes - snapshot.uncorrectedErrors,
       incorrectKeystrokes: snapshot.uncorrectedErrors,
@@ -206,7 +209,7 @@ export function TypingTestPage() {
       passed: (wpmTarget !== undefined || accTarget !== undefined) ? passed : undefined,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, savedOnce, finalMetrics, activeProfile, selectedText, testLanguage, durationMin, snapshot]);
+  }, [phase, savedOnce, finalMetrics, activeProfile, selectedText, testLanguage, usedMs, snapshot]);
 
   const progressRatio = phase === "running" ? 1 - remainingMs / Math.max(durationMsRef.current, 1) : 0;
 
@@ -262,7 +265,7 @@ export function TypingTestPage() {
               {isKruti && (
                 <p className="mt-2 text-xs text-slate-500 font-devanagari dark:text-slate-400">
                   पैराग्राफ़ Kruti Dev के key-कोड में बदलकर दिखाया जाएगा (जैसे भारत = Hkkjr)। असली हिंदी रूप ऊपर अलग पंक्ति में दिखेगा।
-                  परीक्षा जैसा दृश्य पाने के लिए Kruti Dev 010 फ़ॉन्ट इंस्टॉल हो — देखें Font Setup।
+                  परीक्षा जैसा दृश्य पाने के लिए Kruti Dev 010 फ़ॉन्ट इंस्टॉल हो — देखे�� Font Setup।
                 </p>
               )}
               {untypable.length > 0 && (
@@ -378,7 +381,7 @@ export function TypingTestPage() {
           <ResultPill label={t("test_net_wpm")} value={Math.round(finalMetrics.netWpm)} />
           <ResultPill label={t("test_accuracy")} value={`${finalMetrics.accuracy}%`} />
           <ResultPill label={t("test_errors")} value={snapshot.uncorrectedErrors} />
-          <ResultPill label={t("test_duration_used")} value={`${durationMin} ${t("test_minutes")}`} />
+          <ResultPill label={t("test_duration_used")} value={formatClock(usedMs / 1000)} />
         </div>
 
         {activeProfile?.id && <p className="text-xs text-slate-400">{t("test_saved")}</p>}
@@ -429,7 +432,8 @@ export function TypingTestPage() {
               shiftRequired={shiftRequired}
               showFingerColors
               devanagari={isHindi}
-              physicalHints={isHindi ? ENGLISH_HINTS : undefined}
+              krutiDev={isKruti}
+              physicalHints={isHindi && !isKruti ? ENGLISH_HINTS : undefined}
             />
           </div>
           <div className="min-h-0 flex-1">

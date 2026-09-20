@@ -1,5 +1,8 @@
 import { db, DEFAULT_SETTINGS } from "../db/database";
 import type { Profile } from "../types";
+import { analyticsDb } from "../db/analyticsDb";
+import { examDb } from "../db/examDb";
+import { gamesDb } from "../db/gamesDb";
 
 const AVATAR_COLORS = [
   "#2657f5",
@@ -75,6 +78,17 @@ export async function deleteProfile(id: number): Promise<void> {
       await db.dailyProgress.where("profileId").equals(id).delete();
     }
   );
+  // Phase 5-7 data lives in separate databases; remove it too so deleting a
+  // profile does not leave scores, analytics, exam results or certificates.
+  await analyticsDb.transaction("rw", analyticsDb.keystrokes, analyticsDb.reviewSessions, async () => {
+    await analyticsDb.keystrokes.where("profileId").equals(id).delete();
+    await analyticsDb.reviewSessions.where("profileId").equals(id).delete();
+  });
+  await examDb.transaction("rw", examDb.examResults, examDb.certificates, async () => {
+    await examDb.examResults.where("profileId").equals(id).delete();
+    await examDb.certificates.where("profileId").equals(id).delete();
+  });
+  await gamesDb.highScores.where("profileId").equals(id).delete();
 }
 
 export async function ensureDemoProfile(): Promise<Profile> {

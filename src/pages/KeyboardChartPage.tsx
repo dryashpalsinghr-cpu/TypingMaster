@@ -13,6 +13,7 @@ export function KeyboardChartPage() {
   const layout = getKeyboardLayout(selected);
   const rows = getKeyboardRows(selected);
   const isHindi = selected === "unicode-inscript";
+  const isKruti = selected === "kruti-dev-010";
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
@@ -33,6 +34,12 @@ export function KeyboardChartPage() {
           }`}
         >
           English QWERTY
+        </button>
+        <button
+          onClick={() => setSelected("kruti-dev-010")}
+          className={`rounded-md px-3 py-2 text-sm font-medium ${selected === "kruti-dev-010" ? "bg-brand-600 text-white" : "border border-slate-300 dark:border-slate-700"}`}
+        >
+          Kruti Dev 010
         </button>
         <button
           onClick={() => setSelected("unicode-inscript")}
@@ -58,11 +65,13 @@ export function KeyboardChartPage() {
           shiftActive={false}
           shiftRequired={false}
           showFingerColors
-          devanagari={isHindi}
+          devanagari={isHindi || isKruti}
+          krutiDev={isKruti}
           physicalHints={isHindi ? ENGLISH_HINTS : undefined}
         />
       </div>
 
+      {isKruti && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-900/20 dark:text-amber-200"><h2 className="font-semibold">Kruti Dev 010 chart</h2><p className="mt-1 font-devanagari">हर key में ऊपर Shift glyph/symbol और नीचे normal glyph/English key दिखती है—आपके reference chart की तरह।</p></div>}
       {isHindi && <WindowsInscriptSetupGuide />}
     </div>
   );

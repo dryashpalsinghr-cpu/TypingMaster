@@ -13,8 +13,11 @@ export interface BackupFile {
 function openDb(name: string): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(name);
+    // Opening a missing database without a version would create an empty v1
+    // database. Abort that upgrade so backup/count never corrupts a fresh app.
+    req.onupgradeneeded = () => req.transaction?.abort();
     req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onerror = () => reject(req.error ?? new Error("IndexedDB database not found: " + name));
     req.onblocked = () => reject(new Error("IndexedDB open blocked for " + name));
   });
 }
@@ -38,7 +41,8 @@ export async function exportAll(): Promise<BackupFile> {
   const names = await listDatabaseNames();
   const databases: Record<string, DbDump> = {};
   for (const name of names) {
-    const db = await openDb(name);
+    let db: IDBDatabase;
+    try { db = await openDb(name); } catch { continue; }
     const storeNames = Array.from(db.objectStoreNames);
     const dump: DbDump = { version: db.version, stores: {} };
     if (storeNames.length) {
@@ -57,7 +61,8 @@ export async function countAll(): Promise<{ name: string; records: number }[]> {
   const names = await listDatabaseNames();
   const out: { name: string; records: number }[] = [];
   for (const name of names) {
-    const db = await openDb(name);
+    let db: IDBDatabase;
+    try { db = await openDb(name); } catch { continue; }
     const storeNames = Array.from(db.objectStoreNames);
     let total = 0;
     if (storeNames.length) { const tx = db.transaction(storeNames, "readonly"); const counts = await Promise.all(storeNames.map((sn) => reqToPromise(tx.objectStore(sn).count()))); total = counts.reduce((a, b) => a + b, 0); }
@@ -68,7 +73,12 @@ export async function countAll(): Promise<{ name: string; records: number }[]> {
 }
 export function isBackupFile(x: unknown): x is BackupFile {
   const f = x as Partial<BackupFile> | null;
-  return !!f && f.app === "TypeGuru Pro" && f.kind === "backup" && typeof f.databases === "object";
+  if (!f || f.app !== "TypeGuru Pro" || f.kind !== "backup" || f.formatVersion !== 1 || !f.databases || typeof f.databases !== "object") return false;
+  return Object.values(f.databases).every((db) => {
+    const dump = db as Partial<DbDump> | null;
+    return !!dump && Number.isInteger(dump.version) && !!dump.stores && typeof dump.stores === "object" &&
+      Object.values(dump.stores).every(Array.isArray);
+  });
 }
 export async function importAll(file: BackupFile, opts: { clear?: boolean } = {}): Promise<{ dbCount: number; recordCount: number; skipped: string[] }> {
   const clear = opts.clear ?? true;

@@ -43,6 +43,7 @@ export function computeExamMetrics(input: {
   durationSeconds: number;
   minAccuracy: number;
   targetWpm: number;
+  targetKdph: number;
 }): { grossWpm: number; netWpm: number; accuracy: number; kdph: number; passed: boolean } {
   const minutes = input.durationSeconds > 0 ? input.durationSeconds / 60 : 1 / 60;
   const hours = input.durationSeconds > 0 ? input.durationSeconds / 3600 : 1 / 3600;
@@ -50,6 +51,6 @@ export function computeExamMetrics(input: {
   const netWpm = Math.max(0, Math.round(input.correctChars / 5 / minutes));
   const accuracy = input.typedChars > 0 ? Math.round((input.correctChars / input.typedChars) * 100) : 0;
   const kdph = Math.round(input.keyDepressions / hours);
-  const passed = netWpm >= input.targetWpm && accuracy >= input.minAccuracy;
+  const passed = netWpm >= input.targetWpm && kdph >= input.targetKdph && accuracy >= input.minAccuracy;
   return { grossWpm, netWpm, accuracy, kdph, passed };
 }

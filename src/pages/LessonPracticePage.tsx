@@ -411,7 +411,8 @@ export function LessonPracticePage() {
                 shiftRequired={shiftRequired}
                 showFingerColors
                 devanagari={isHindi}
-                physicalHints={isHindi ? ENGLISH_HINTS : undefined}
+                krutiDev={isKruti}
+                physicalHints={isHindi && !isKruti ? ENGLISH_HINTS : undefined}
                 variant="premium"
               />
             </div>

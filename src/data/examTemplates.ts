@@ -37,8 +37,8 @@ export const BUILT_IN_TEMPLATES: ExamTemplate[] = [
   },
   {
     category: "cpct",
-    name: "CPCT Style (Hindi)",
-    description: "Hindi typing practice format. Requires a Hindi layout. Edit targets as needed.",
+    name: "CPCT Style (Kruti Dev 010)",
+    description: "Kruti Dev 010 Hindi typing practice using normal US-keyboard codes.",
     language: "hi",
     durationSeconds: 900,
     targetWpm: 25,
@@ -49,6 +49,6 @@ export const BUILT_IN_TEMPLATES: ExamTemplate[] = [
     isBuiltIn: true,
     updatedAt: 0,
     passage:
-      "कंप्यूटर पर लगातार अभ्यास से गति और शुद्धता दोनों बढ़ती हैं। सीधे बैठें, कंधों को ढीला रखें और हर शब्द के बाद उँगलियों को होम रो पर लौटाएँ। जब आपकी शुद्धता स्थिर हो जाती है तब गति अपने आप बढ़ने लगती है, इसलिए पहले साफ़ टाइपिंग पर ध्यान दें।",
+      "भारत एक महान देश है। नियमित अभ्यास से गति और शुद्धता बढ़ती है। सीधे बैठें, हाथों को आराम से रखें और हर शब्द के बाद उंगलियों को होम रो पर वापस लाएं। पहले सही टाइप करें और फिर धीरे धीरे अपनी गति बढ़ाएं। साफ टाइपिंग से परीक्षा में अच्छे अंक मिलते हैं।",
   },
 ];

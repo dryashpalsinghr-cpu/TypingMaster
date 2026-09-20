@@ -14,6 +14,8 @@ interface VirtualKeyboardProps {
    * physical-key hints". Pass the base English layout keyed by code. */
   physicalHints?: Map<string, string>;
   devanagari?: boolean;
+  /** Kruti chart face: Shift glyph/key on top, normal glyph/key below. */
+  krutiDev?: boolean;
   /** "premium" renders the 3D glass keyboard used by the redesigned Practice
    * screen. Omitted (or "default") keeps the original flat keyboard exactly
    * as before, so every other screen that renders this component is
@@ -47,6 +49,21 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+function KeyFace({ keyDef, hint, shiftActive, krutiDev }: { keyDef: KeyDefinition; hint?: string; shiftActive: boolean; krutiDev?: boolean }) {
+  if (keyDef.code === "Space") return null;
+  if (keyDef.isModifier || !krutiDev) {
+    return <><span>{shiftActive && keyDef.shiftLabel ? keyDef.shiftLabel : keyDef.normalLabel}</span>{hint && !keyDef.isModifier && <span className="pp-key__hint">{hint}</span>}</>;
+  }
+  return (
+    <div className="grid h-full w-full grid-cols-2 grid-rows-2 items-center px-1 leading-none">
+      <span className="justify-self-start text-[10px] font-semibold sm:text-xs">{keyDef.shiftLabel ?? ""}</span>
+      <span className="justify-self-end font-sans text-[8px] font-medium text-slate-400 sm:text-[10px]">{keyDef.shiftOutput ?? ""}</span>
+      <span className="justify-self-start text-sm font-bold sm:text-base">{keyDef.normalLabel}</span>
+      <span className="justify-self-end self-end font-sans text-[9px] font-semibold text-slate-500 sm:text-[11px]">{keyDef.output}</span>
+    </div>
+  );
+}
+
 export function VirtualKeyboard({
   rows,
   activeCode,
@@ -57,6 +74,7 @@ export function VirtualKeyboard({
   showFingerColors,
   physicalHints,
   devanagari,
+  krutiDev,
   variant = "default",
 }: VirtualKeyboardProps) {
   if (variant === "premium") {
@@ -91,8 +109,7 @@ export function VirtualKeyboard({
                       : {}),
                   }}
                 >
-                  <span>{key.code === "Space" ? "" : shiftActive && key.shiftLabel ? key.shiftLabel : key.normalLabel}</span>
-                  {hint && !key.isModifier && <span className="pp-key__hint">{hint}</span>}
+                  <KeyFace keyDef={key} hint={hint} shiftActive={shiftActive} krutiDev={krutiDev} />
                 </div>
               );
             })}
@@ -154,12 +171,7 @@ export function VirtualKeyboard({
                     : {}),
                 }}
               >
-                <span>{key.code === "Space" ? "" : shiftActive && key.shiftLabel ? key.shiftLabel : key.normalLabel}</span>
-                {hint && !key.isModifier && (
-                  <span className="absolute bottom-0.5 right-1 text-[8px] font-normal text-slate-400 dark:text-slate-500">
-                    {hint}
-                  </span>
-                )}
+                <KeyFace keyDef={key} hint={hint} shiftActive={shiftActive} krutiDev={krutiDev} />
               </div>
             );
           })}

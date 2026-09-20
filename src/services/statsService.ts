@@ -1,6 +1,6 @@
 import { db } from "../db/database";
 import type { AttemptResult, TypingLanguage } from "../types";
-import { getLessonsForLanguage } from "../data/lessons";
+import { getLessonsForLayout } from "../data/lessons";
 
 export interface DashboardStats {
   avgWpm: number;
@@ -40,7 +40,11 @@ export async function getDashboardStats(profileId: number): Promise<DashboardSta
   const avgWpm = Math.round(attempts.reduce((s, a) => s + a.netWpm, 0) / attempts.length);
   const avgAccuracy = Math.round(attempts.reduce((s, a) => s + a.accuracy, 0) / attempts.length);
   const bestWpm = Math.round(Math.max(...attempts.map((a) => a.netWpm)));
-  const lessonsCompleted = attempts.filter((a) => a.kind === "lesson" && a.completed).length;
+  const lessonsCompleted = new Set(
+    attempts
+      .filter((a) => a.kind === "lesson" && a.completed && a.passed && a.lessonId)
+      .map((a) => a.lessonId),
+  ).size;
 
   const todayKey = toDateKey(new Date().toISOString());
   const minutesTodayPracticed = Math.round(
@@ -103,10 +107,11 @@ export interface LanguageProgress {
 }
 
 export async function getLanguageProgress(profileId: number, language: TypingLanguage): Promise<LanguageProgress> {
+  const layout = language === "hi" ? "kruti-dev-010" : "en-qwerty";
   const attempts = await db.attempts
     .where("profileId")
     .equals(profileId)
-    .filter((a) => a.language === language)
+    .filter((a) => a.language === language && a.layout === layout)
     .toArray();
 
   const lessonAttempts = attempts.filter((a) => a.kind === "lesson" && a.completed);
@@ -115,7 +120,7 @@ export async function getLanguageProgress(profileId: number, language: TypingLan
   return {
     language,
     lessonsCompleted: completedLessonIds.size,
-    totalLessons: getLessonsForLanguage(language).length,
+    totalLessons: getLessonsForLayout(layout).length,
     avgWpm: attempts.length ? Math.round(attempts.reduce((s, a) => s + a.netWpm, 0) / attempts.length) : 0,
     avgAccuracy: attempts.length ? Math.round(attempts.reduce((s, a) => s + a.accuracy, 0) / attempts.length) : 0,
   };

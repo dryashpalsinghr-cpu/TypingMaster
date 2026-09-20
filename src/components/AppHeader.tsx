@@ -17,7 +17,13 @@ export function AppHeader() {
     await updateProfile(activeProfile.id, { preferredTypingLanguage: language, preferredLayout: layout });
     setActiveProfile({ ...activeProfile, preferredTypingLanguage: language, preferredLayout: layout });
   };
-  const currentLayout = activeProfile ? getKeyboardLayout(activeProfile.preferredLayout) : null;
+  const changeLayout = async (layout: KeyboardLayoutId) => {
+    if (!activeProfile?.id) return;
+    await updateProfile(activeProfile.id, { preferredLayout: layout });
+    setActiveProfile({ ...activeProfile, preferredLayout: layout });
+  };
+  const effectiveLayout: KeyboardLayoutId = activeProfile?.preferredTypingLanguage === "hi" ? "kruti-dev-010" : "en-qwerty";
+  const currentLayout = activeProfile ? getKeyboardLayout(effectiveLayout) : null;
   return (
     <header className="pp-header flex h-16 flex-wrap items-center justify-between gap-2 px-6">
       <div className="flex items-center gap-3">
@@ -31,6 +37,13 @@ export function AppHeader() {
             <option value="en">English</option><option value="hi">हिन्दी</option>
           </select>
         </label>
+        {activeProfile?.preferredTypingLanguage === "hi" && (
+          <label className="flex items-center gap-1 text-xs text-[#5c7599] dark:text-slate-400">{t("header_layout")}
+            <select value={effectiveLayout} onChange={(e) => void changeLayout(e.target.value as KeyboardLayoutId)} className="rounded-md border border-[#1677e8]/25 bg-white/80 px-2 py-1 text-sm font-devanagari dark:border-slate-700 dark:bg-slate-800">
+              <option value="kruti-dev-010">Kruti Dev 010</option>
+            </select>
+          </label>
+        )}
         <select value={interfaceLanguage} onChange={(e) => setInterfaceLanguage(e.target.value as "en" | "hi")} className="rounded-md border border-[#1677e8]/25 bg-white/80 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800">
           <option value="en">English</option><option value="hi">हिन्दी</option>
         </select>

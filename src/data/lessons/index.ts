@@ -15,7 +15,7 @@ export function getLessonExercises(lesson: Lesson): LessonExercise[] {
   return [{ type: lesson.exerciseType, text: lesson.practiceText }];
 }
 export function getContinueLesson(language: TypingLanguage, lastLessonId: string | undefined): Lesson {
-  const lessons = getLessonsForLanguage(language);
+  const lessons = language === "hi" ? getLessonsForLayout("kruti-dev-010") : getLessonsForLayout("en-qwerty");
   const found = lastLessonId ? lessons.find((l) => l.id === lastLessonId) : undefined;
   return found ?? lessons[0];
 }
