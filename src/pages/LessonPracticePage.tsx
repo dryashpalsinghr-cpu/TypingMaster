@@ -53,7 +53,7 @@ const LESSON_DURATION_MS = 5 * 60 * 1000;
 export function LessonPracticePage() {
   const { lessonId } = useParams();
   const navigate = useNavigate();
-  const { activeProfile } = useProfileContext();
+  const { activeProfile, setActiveProfile } = useProfileContext();
   const { interfaceLanguage } = useThemeContext();
   const t = useT();
 
@@ -133,6 +133,40 @@ export function LessonPracticePage() {
     }, 250);
     return () => window.clearInterval(id);
   }, [lesson.id, lessonTimeUp, lessonStarted]);
+
+  // ---- Resume progress ---------------------------------------------------
+  // Remembers how far the learner got, so after closing and re-opening the
+  // app "Continue" (Dashboard) and the tick marks (Learn) point to the right
+  // lesson instead of Lesson 1. Progress only ever moves FORWARD, so
+  // revising an older lesson never sets it back.
+  const rememberProgress = (targetLessonId: string) => {
+    const profile = activeProfile;
+    if (!profile?.id || profile.lastLessonId === targetLessonId) return;
+    const targetIdx = layoutLessons.findIndex((l) => l.id === targetLessonId);
+    const currentIdx = layoutLessons.findIndex((l) => l.id === profile.lastLessonId);
+    if (targetIdx < 0 || targetIdx < currentIdx) return;
+    // Save to the database (survives closing the app) and refresh the
+    // in-memory profile so Dashboard / Learn show it without a restart.
+    void touchProfileActivity(profile.id, targetLessonId).then(() => {
+      setActiveProfile({ ...profile, lastLessonId: targetLessonId });
+    });
+  };
+
+  // The moment the learner types the first key, this lesson is "where they are"
+  // (so closing the app in the middle of a lesson resumes at this lesson).
+  useEffect(() => {
+    if (!lessonStarted || lessonStartRef.current === null) return;
+    rememberProgress(lesson.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonStarted, lesson.id]);
+
+  // When the 5 minutes are over the lesson counts as done, so the NEXT lesson
+  // becomes the place to continue from (stays put on the very last lesson).
+  useEffect(() => {
+    if (!lessonTimeUp || lessonStartRef.current === null) return;
+    rememberProgress(nextLesson ? nextLesson.id : lesson.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonTimeUp, lesson.id]);
 
   // Roll into the next exercise (looping back to the first one after the
   // last). Everything typed so far is added to the session totals.
@@ -232,8 +266,6 @@ export function LessonPracticePage() {
     };
   }, [handleKeyDown, handleKeyUp]);
 
-  const isLastExercise = exerciseIndex === exercises.length - 1;
-
   useEffect(() => {
     if (!snapshot.completed || savedExercises.has(chunk) || !activeProfile?.id) return;
     setSavedExercises((s) => new Set(s).add(chunk));
@@ -272,11 +304,8 @@ export function LessonPracticePage() {
       passed,
     });
 
-    if (isLastExercise) {
-      void touchProfileActivity(activeProfile.id, lesson.id);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [snapshot.completed, chunk, activeProfile, lesson, metrics, snapshot, isLastExercise]);
+  }, [snapshot.completed, chunk, activeProfile, lesson, metrics, snapshot]);
 
   // Session-wide numbers (all rounds so far + the round in progress) for the
   // stat cards and the Lesson Complete popup.
