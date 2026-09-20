@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2, Circle } from "lucide-react";
-import { getCourseForLanguage, getLessonsForLanguage, getLessonsForLayout, hasLessonsForLayout } from "../data/lessons";
+import { getLessonsForLayout, hasLessonsForLayout, englishBeginnerCourse, hindiBeginnerCourse, krutiDevBeginnerCourse, remingtonGailBeginnerCourse } from "../data/lessons";
 import { useProfileContext } from "../contexts/ProfileContext";
 import { useThemeContext } from "../contexts/ThemeContext";
 import { useT } from "../hooks/useTranslation";
@@ -10,11 +10,18 @@ export function LearnPage() {
   const { interfaceLanguage } = useThemeContext();
   const t = useT();
   const typingLanguage = activeProfile?.preferredTypingLanguage ?? "en";
-  const layout = activeProfile?.preferredLayout ?? (typingLanguage === "hi" ? "unicode-inscript" : "en-qwerty");
+  const layout = activeProfile?.preferredLayout ?? (typingLanguage === "hi" ? "kruti-dev-010" : "en-qwerty");
   const isLegacyLayout = layout === "kruti-dev-010" || layout === "remington-gail";
   const legacyReady = hasLessonsForLayout(layout);
-  const course = getCourseForLanguage(typingLanguage);
-  const lessons = isLegacyLayout ? getLessonsForLayout(layout) : getLessonsForLanguage(typingLanguage);
+  // Course header must match whichever layout's lessons are actually being
+  // shown below - never fall back to a language-only lookup, or a Kruti Dev
+  // lesson list could end up displayed under the InScript course title.
+  const course =
+    layout === "kruti-dev-010" ? krutiDevBeginnerCourse :
+    layout === "remington-gail" ? remingtonGailBeginnerCourse :
+    layout === "unicode-inscript" ? hindiBeginnerCourse :
+    englishBeginnerCourse;
+  const lessons = getLessonsForLayout(layout);
   const isHindi = typingLanguage === "hi";
   const lastLessonIndex = activeProfile?.lastLessonId ? lessons.findIndex((l) => l.id === activeProfile.lastLessonId) : -1;
   return (

@@ -115,7 +115,7 @@ function NewProfileForm({
       displayName: name.trim(),
       preferredInterfaceLanguage: interfaceLang,
       preferredTypingLanguage: typingLanguage,
-      preferredLayout: typingLanguage === "hi" ? "unicode-inscript" : "en-qwerty",
+      preferredLayout: typingLanguage === "hi" ? "kruti-dev-010" : "en-qwerty",
       skillLevel,
       dailyGoalMinutes: 15,
     });
