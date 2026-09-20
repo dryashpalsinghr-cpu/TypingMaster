@@ -13,14 +13,9 @@ export function AppHeader() {
   const navigate = useNavigate();
   const changeTypingLanguage = async (language: TypingLanguage) => {
     if (!activeProfile?.id) return;
-    const layout: KeyboardLayoutId = language === "hi" ? "unicode-inscript" : "en-qwerty";
+    const layout: KeyboardLayoutId = language === "hi" ? "kruti-dev-010" : "en-qwerty";
     await updateProfile(activeProfile.id, { preferredTypingLanguage: language, preferredLayout: layout });
     setActiveProfile({ ...activeProfile, preferredTypingLanguage: language, preferredLayout: layout });
-  };
-  const changeLayout = async (layout: KeyboardLayoutId) => {
-    if (!activeProfile?.id) return;
-    await updateProfile(activeProfile.id, { preferredLayout: layout });
-    setActiveProfile({ ...activeProfile, preferredLayout: layout });
   };
   const currentLayout = activeProfile ? getKeyboardLayout(activeProfile.preferredLayout) : null;
   return (
@@ -36,15 +31,6 @@ export function AppHeader() {
             <option value="en">English</option><option value="hi">हिन्दी</option>
           </select>
         </label>
-        {activeProfile?.preferredTypingLanguage === "hi" && (
-          <label className="flex items-center gap-1 text-xs text-[#5c7599] dark:text-slate-400">{t("header_layout")}
-            <select value={activeProfile.preferredLayout} onChange={(e) => void changeLayout(e.target.value as KeyboardLayoutId)} className="rounded-md border border-[#1677e8]/25 bg-white/80 px-2 py-1 text-sm font-devanagari dark:border-slate-700 dark:bg-slate-800">
-              <option value="unicode-inscript">यूनिकोड - इनस्क्रिप्ट</option>
-              <option value="kruti-dev-010">Kruti Dev 010 (Legacy)</option>
-              <option value="remington-gail">Remington GAIL (Legacy)</option>
-            </select>
-          </label>
-        )}
         <select value={interfaceLanguage} onChange={(e) => setInterfaceLanguage(e.target.value as "en" | "hi")} className="rounded-md border border-[#1677e8]/25 bg-white/80 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800">
           <option value="en">English</option><option value="hi">हिन्दी</option>
         </select>
