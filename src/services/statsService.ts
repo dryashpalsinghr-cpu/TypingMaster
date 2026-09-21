@@ -15,8 +15,13 @@ export interface DashboardStats {
   weeklyAccuracy: { date: string; accuracy: number }[];
 }
 
+// LOCAL date (YYYY-MM-DD). Pehle iso.slice(0, 10) UTC date deta tha, isliye India
+// me raat 12 se subah 5:30 tak "aaj" galat din ka ban jata tha.
 function toDateKey(iso: string): string {
-  return iso.slice(0, 10);
+  const d = new Date(iso);
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
 export async function getDashboardStats(profileId: number): Promise<DashboardStats> {
@@ -47,9 +52,11 @@ export async function getDashboardStats(profileId: number): Promise<DashboardSta
   ).size;
 
   const todayKey = toDateKey(new Date().toISOString());
-  const minutesTodayPracticed = Math.round(
-    attempts.filter((a) => toDateKey(a.dateTime) === todayKey).reduce((s, a) => s + a.durationSec, 0) / 60
-  );
+  // 1 decimal (4.5 min): pehle Math.round se 30 sec se kam practice 0 min dikhti thi.
+  const minutesTodayPracticed =
+    Math.round(
+      (attempts.filter((a) => toDateKey(a.dateTime) === todayKey).reduce((s, a) => s + a.durationSec, 0) / 60) * 10
+    ) / 10;
 
   // Practice streak: count consecutive days (including today) with at least one attempt.
   const daySet = new Set(attempts.map((a) => toDateKey(a.dateTime)));
