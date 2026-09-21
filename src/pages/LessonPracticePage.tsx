@@ -168,9 +168,72 @@ export function LessonPracticePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lessonTimeUp, lesson.id]);
 
+  // ---- Adhoora round bhi practice time me count hoga -------------------------
+  // Pehle attempt sirf tab save hota tha jab poora exercise (~200 characters)
+  // khatam hota. Beginner ke liye 5 minute me exercise pura nahi hota, isliye
+  // "Practiced Today" 0 / kam dikhta tha. Ab adhoora round bhi save hota hai:
+  // time-up par, Next (skip) dabane par, Restart par, ya page chhodne par.
+  const latestRef = useRef({ snapshot, metrics, lesson, profileId: activeProfile?.id });
+  latestRef.current = { snapshot, metrics, lesson, profileId: activeProfile?.id };
+  const partialSavedRef = useRef<string | null>(null);
+
+  const savePartialAttempt = useCallback(() => {
+    const { snapshot: s, metrics: m, lesson: l, profileId } = latestRef.current;
+    if (!profileId || s.completed || s.totalKeystrokes === 0) return;
+    const key = `${l.id}:${s.startedAt}`;
+    if (partialSavedRef.current === key) return; // is round ka time pehle hi save ho chuka
+    partialSavedRef.current = key;
+
+    const keyStats: AttemptResult["keyStats"] = {};
+    for (const c of s.characters) {
+      if (c.status === "pending") continue; // sirf jo type hua
+      keyStats[c.expected] ??= { attempts: 0, errors: 0, avgMs: 0 };
+      keyStats[c.expected].attempts += 1;
+      if (c.status === "incorrect" || c.status === "corrected") keyStats[c.expected].errors += 1;
+    }
+
+    void saveAttempt({
+      profileId,
+      language: l.language,
+      layout: l.layout,
+      courseId: l.courseId,
+      lessonId: l.id,
+      kind: "lesson",
+      dateTime: new Date().toISOString(),
+      durationSec: Math.round(s.elapsedMs / 1000),
+      totalKeystrokes: s.totalKeystrokes,
+      correctKeystrokes: s.totalKeystrokes - s.uncorrectedErrors,
+      incorrectKeystrokes: s.uncorrectedErrors,
+      correctedErrors: s.correctedErrors,
+      uncorrectedErrors: s.uncorrectedErrors,
+      backspaces: s.backspaces,
+      grossWpm: m.grossWpm,
+      netWpm: m.netWpm,
+      accuracy: m.accuracy,
+      keyStats,
+      bigramStats: {},
+      completed: false,
+      passed: false,
+    });
+  }, []);
+
+  // 5 minute poore hue -> adhoora round save.
+  useEffect(() => {
+    if (lessonTimeUp) savePartialAttempt();
+  }, [lessonTimeUp, savePartialAttempt]);
+
+  // Page chhodne par (Cancel / sidebar / back) -> adhoora round save.
+  useEffect(() => () => savePartialAttempt(), [savePartialAttempt]);
+
+  const handleRestart = useCallback(() => {
+    savePartialAttempt();
+    restart();
+  }, [savePartialAttempt, restart]);
+
   // Roll into the next exercise (looping back to the first one after the
   // last). Everything typed so far is added to the session totals.
   const advanceChunk = useCallback(() => {
+    savePartialAttempt(); // Next/skip par adhoora round ka time na khoye
     setCarry((c) => ({
       keystrokes: c.keystrokes + snapshot.totalKeystrokes,
       errors: c.errors + snapshot.uncorrectedErrors,
@@ -179,7 +242,7 @@ export function LessonPracticePage() {
     const nextIndex = (chunk + 1) % exercises.length;
     setChunk(chunk + 1);
     loadText(exercises[nextIndex].text);
-  }, [chunk, exercises, loadText, snapshot.totalKeystrokes, snapshot.uncorrectedErrors, snapshot.elapsedMs]);
+  }, [chunk, exercises, loadText, savePartialAttempt, snapshot.totalKeystrokes, snapshot.uncorrectedErrors, snapshot.elapsedMs]);
 
   // Exercise finished but the 5 minutes are not over yet -> keep going with
   // the next round immediately, so the lesson never ends early.
@@ -349,7 +412,7 @@ export function LessonPracticePage() {
               {exercise.label ? ` · ${interfaceLanguage === "hi" && exercise.labelHi ? exercise.labelHi : exercise.label}` : ""}
             </p>
           </div>
-          <button onClick={restart} className="pp-restart-btn">
+          <button onClick={handleRestart} className="pp-restart-btn">
             <RotateCcw size={14} /> {t("practice_restart")}
           </button>
         </div>
