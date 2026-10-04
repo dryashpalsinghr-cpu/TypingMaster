@@ -30,7 +30,7 @@ export function TypingTestPage() {
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [testLanguage, setTestLanguage] = useState<TypingLanguage>("en");
-  const [hindiLayout, setHindiLayout] = useState<"unicode-inscript" | "kruti-dev-010">("unicode-inscript");
+  const [hindiLayout, setHindiLayout] = useState<"unicode-inscript" | "kruti-dev-010">("kruti-dev-010");
   const availableTexts = useMemo(() => getTestTextsForLanguage(testLanguage), [testLanguage]);
   const [textId, setTextId] = useState<string>(availableTexts[0]?.id ?? "");
   const [durationMin, setDurationMin] = useState<number>(5);
@@ -78,6 +78,20 @@ export function TypingTestPage() {
   useEffect(() => {
     snapshotRef.current = snapshot;
   }, [snapshot]);
+
+  // Long exam passages: keep the passage box a fixed height and scroll it so the
+  // current character stays visible (keyboard + hands never get pushed off screen).
+  const passageBoxRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const box = passageBoxRef.current;
+    if (!box || phase !== "running") return;
+    const cur = box.querySelector<HTMLElement>(".animate-pulse");
+    if (!cur) return;
+    const top = cur.offsetTop;
+    if (top < box.scrollTop + 8 || top > box.scrollTop + box.clientHeight - 56) {
+      box.scrollTop = Math.max(0, top - 56);
+    }
+  }, [snapshot.cursor, phase]);
 
   const currentCell = snapshot.characters[snapshot.cursor];
   const nextNeededChar = currentCell ? currentCell.expected[currentCell.typedBuffer.length] ?? null : null;
@@ -419,8 +433,8 @@ export function TypingTestPage() {
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_260px]">
         <div className="flex min-h-0 flex-col gap-3">
-          <div className="shrink-0">
-            <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} krutiDev={isKruti} unicodePreview={selectedText?.text} />
+          <div ref={passageBoxRef} className="relative max-h-[190px] shrink-0 overflow-y-auto rounded-xl">
+            <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} krutiDev={isKruti} unicodePreview={selectedText && selectedText.text.length <= 600 ? selectedText.text : undefined} />
           </div>
           <div className="shrink-0">
             <VirtualKeyboard
