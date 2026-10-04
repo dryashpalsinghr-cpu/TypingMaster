@@ -44,7 +44,10 @@ function shuffle<T>(items: T[], salt = 0): T[] {
 /** Walk a token list without repeating, wrapping only when the list is used up. */
 class Feed {
   private pos = 0;
-  constructor(private tokens: string[]) {}
+  private tokens: string[];
+  constructor(tokens: string[]) {
+    this.tokens = tokens;
+  }
   /** Take tokens until the text is about `chars` long. */
   chars(chars: number): string {
     const out: string[] = [];
