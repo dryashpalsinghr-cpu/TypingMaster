@@ -1,4 +1,5 @@
 import type { TypingLanguage, KeyboardLayoutId } from "../types";
+import { englishExam1, englishExam2, englishExam3, hindiExam1, hindiExam2, hindiExam3 } from "./examPassages";
 
 export interface TestText {
   id: string;
@@ -88,9 +89,16 @@ export const testTexts: TestText[] = [
   { id: "en-t-short", language: "en", layout: "en-qwerty", title: "Short passage (~1 min)", titleHi: "छोटा टेक्स्ट (~1 मिनट)", text: englishShort, wordCount: wc(englishShort) },
   { id: "en-t-medium", language: "en", layout: "en-qwerty", title: "Medium passage (~5 min)", titleHi: "मध्यम टेक्स्ट (~5 मिनट)", text: englishMedium, wordCount: wc(englishMedium) },
   { id: "en-t-long", language: "en", layout: "en-qwerty", title: "Long passage (~15 min)", titleHi: "लंबा टेक्स्ट (~15 मिनट)", text: englishLong, wordCount: wc(englishLong) },
-  { id: "hi-t-short", language: "hi", layout: "unicode-inscript", title: "Short passage (~1 min)", titleHi: "छोटा टेक्स्ट (~1 मिनट)", text: hindiShort, wordCount: wc(hindiShort) },
-  { id: "hi-t-medium", language: "hi", layout: "unicode-inscript", title: "Medium passage (~5 min)", titleHi: "मध्यम टेक्स्ट (~5 मिनट)", text: hindiMedium, wordCount: wc(hindiMedium) },
-  { id: "hi-t-long", language: "hi", layout: "unicode-inscript", title: "Long passage (~15 min)", titleHi: "लंबा टेक्स्ट (~15 मिनट)", text: hindiLong, wordCount: wc(hindiLong) },
+  { id: "hi-t-short", language: "hi", layout: "kruti-dev-010", title: "Short passage (~1 min)", titleHi: "छोटा टेक्स्ट (~1 मिनट)", text: hindiShort, wordCount: wc(hindiShort) },
+  { id: "hi-t-medium", language: "hi", layout: "kruti-dev-010", title: "Medium passage (~5 min)", titleHi: "मध्यम टेक्स्ट (~5 मिनट)", text: hindiMedium, wordCount: wc(hindiMedium) },
+  { id: "hi-t-long", language: "hi", layout: "kruti-dev-010", title: "Long passage (~15 min)", titleHi: "लंबा टेक्स्ट (~15 मिनट)", text: hindiLong, wordCount: wc(hindiLong) },
+  // Long exam-style passages (800-1000 words), like real typing-exam papers.
+  { id: "en-exam-1", language: "en", layout: "en-qwerty", title: "Exam passage 1 - Digital Governance", titleHi: "परीक्षा पैराग्राफ़ 1 - डिजिटल शासन", text: englishExam1, wordCount: wc(englishExam1) },
+  { id: "en-exam-2", language: "en", layout: "en-qwerty", title: "Exam passage 2 - Conservation of Water", titleHi: "परीक्षा पैराग्राफ़ 2 - जल संरक्षण", text: englishExam2, wordCount: wc(englishExam2) },
+  { id: "en-exam-3", language: "en", layout: "en-qwerty", title: "Exam passage 3 - Road Safety", titleHi: "परीक्षा पैराग्राफ़ 3 - सड़क सुरक्षा", text: englishExam3, wordCount: wc(englishExam3) },
+  { id: "hi-exam-1", language: "hi", layout: "kruti-dev-010", title: "Exam passage 1 - Good Governance", titleHi: "परीक्षा पैराग्राफ़ 1 - सुशासन और नागरिक सेवाएं", text: hindiExam1, wordCount: wc(hindiExam1) },
+  { id: "hi-exam-2", language: "hi", layout: "kruti-dev-010", title: "Exam passage 2 - Water Conservation", titleHi: "परीक्षा पैराग्राफ़ 2 - जल संरक्षण", text: hindiExam2, wordCount: wc(hindiExam2) },
+  { id: "hi-exam-3", language: "hi", layout: "kruti-dev-010", title: "Exam passage 3 - Importance of Education", titleHi: "परीक्षा पैराग्राफ़ 3 - शिक्षा का महत्व", text: hindiExam3, wordCount: wc(hindiExam3) },
 ];
 
 export function getTestTextsForLanguage(language: TypingLanguage): TestText[] {
