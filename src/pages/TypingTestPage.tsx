@@ -154,6 +154,8 @@ export function TypingTestPage() {
         return;
       }
       if (snapshot.completed) return;
+      // Ctrl/Alt/Win shortcuts (Ctrl+R, Alt+Tab ...) are not typing - leave them alone.
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
       if (e.key === "Backspace") {
         e.preventDefault();
         backspace();
@@ -351,7 +353,7 @@ export function TypingTestPage() {
 
           <button
             onClick={startTest}
-            disabled={!selectedText}
+            disabled={!selectedText || untypable.length > 0}
             className="w-full rounded-lg bg-brand-600 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {t("test_start")}

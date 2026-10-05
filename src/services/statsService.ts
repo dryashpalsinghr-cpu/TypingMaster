@@ -62,6 +62,9 @@ export async function getDashboardStats(profileId: number): Promise<DashboardSta
   const daySet = new Set(attempts.map((a) => toDateKey(a.dateTime)));
   let streakDays = 0;
   const cursor = new Date();
+  // Aaj abhi practice nahi ki to streak toota nahi hai - kal se ginti shuru karo
+  // (pehle subah-subah dashboard par streak 0 dikhta tha).
+  if (!daySet.has(toDateKey(cursor.toISOString()))) cursor.setDate(cursor.getDate() - 1);
   for (;;) {
     const key = toDateKey(cursor.toISOString());
     if (daySet.has(key)) {

@@ -285,6 +285,8 @@ export function LessonPracticePage() {
         return;
       }
       if (snapshot.completed) return;
+      // Ctrl/Alt/Win shortcuts are not typing - leave them alone.
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
 
       if (e.key === "Backspace") {
         e.preventDefault();

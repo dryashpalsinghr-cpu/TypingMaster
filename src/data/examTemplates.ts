@@ -1,4 +1,5 @@
 import type { ExamTemplate } from "../types/exam";
+import { englishExam1, englishExam2, hindiExam1 } from "./examPassages";
 // Built-in templates are EDITABLE starting points. Duration and target numbers
 // are illustrative defaults - adjust them to the current official notification.
 // All passages below are original practice text, not copied from any exam.
@@ -16,8 +17,7 @@ export const BUILT_IN_TEMPLATES: ExamTemplate[] = [
     focusLossLimit: 3,
     isBuiltIn: true,
     updatedAt: 0,
-    passage:
-      "Practice makes a typist steady and calm. Sit straight, keep both wrists relaxed, and let your fingers return to the home row after every word. Speed grows on its own once your accuracy becomes reliable, so aim for clean and even strokes before you try to race the clock.",
+    passage: englishExam1,
   },
   {
     category: "rrb",
@@ -32,8 +32,7 @@ export const BUILT_IN_TEMPLATES: ExamTemplate[] = [
     focusLossLimit: 3,
     isBuiltIn: true,
     updatedAt: 0,
-    passage:
-      "A reliable typist reads a few words ahead while the fingers keep moving. Breathe evenly, keep your eyes on the source text, and trust the muscle memory you have built through daily practice. Small, consistent sessions beat long and tiring ones every single week.",
+    passage: englishExam2,
   },
   {
     category: "cpct",
@@ -48,7 +47,6 @@ export const BUILT_IN_TEMPLATES: ExamTemplate[] = [
     focusLossLimit: 3,
     isBuiltIn: true,
     updatedAt: 0,
-    passage:
-      "भारत एक महान देश है। नियमित अभ्यास से गति और शुद्धता बढ़ती है। सीधे बैठें, हाथों को आराम से रखें और हर शब्द के बाद उंगलियों को होम रो पर वापस लाएं। पहले सही टाइप करें और फिर धीरे धीरे अपनी गति बढ़ाएं। साफ टाइपिंग से परीक्षा में अच्छे अंक मिलते हैं।",
+    passage: hindiExam1,
   },
 ];

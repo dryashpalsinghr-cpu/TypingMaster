@@ -2,8 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { TypingEngine, calculateMetrics, type EngineConfig, type EngineSnapshot } from "../engine/typingEngine";
 
 export function useTypingEngine(expectedText: string, config: EngineConfig) {
-  const engineRef = useRef<TypingEngine>(new TypingEngine(expectedText, config));
-  const [snapshot, setSnapshot] = useState<EngineSnapshot>(engineRef.current.getSnapshot());
+  // Lazy init: `useRef(new TypingEngine(...))` would build (and throw away) a whole
+  // engine - thousands of grapheme cells for exam passages - on EVERY render.
+  const engineRef = useRef<TypingEngine | null>(null);
+  if (engineRef.current === null) engineRef.current = new TypingEngine(expectedText, config);
+  const [snapshot, setSnapshot] = useState<EngineSnapshot>(() => engineRef.current!.getSnapshot());
 
   useEffect(() => {
     engineRef.current = new TypingEngine(expectedText, config);
@@ -12,16 +15,16 @@ export function useTypingEngine(expectedText: string, config: EngineConfig) {
   }, [expectedText]);
 
   const typeCharacter = useCallback((char: string) => {
-    setSnapshot(engineRef.current.typeCharacter(char));
+    setSnapshot(engineRef.current!.typeCharacter(char));
   }, []);
 
   const backspace = useCallback(() => {
-    setSnapshot(engineRef.current.backspace());
+    setSnapshot(engineRef.current!.backspace());
   }, []);
 
   const restart = useCallback(() => {
-    engineRef.current.reset(expectedText);
-    setSnapshot(engineRef.current.getSnapshot());
+    engineRef.current!.reset(expectedText);
+    setSnapshot(engineRef.current!.getSnapshot());
   }, [expectedText]);
 
   // Load a (possibly identical) text into the engine right now, in the same
@@ -31,8 +34,8 @@ export function useTypingEngine(expectedText: string, config: EngineConfig) {
   // the current one (single-exercise lessons), where the effect above would
   // not fire.
   const loadText = useCallback((text: string) => {
-    engineRef.current.reset(text);
-    setSnapshot(engineRef.current.getSnapshot());
+    engineRef.current!.reset(text);
+    setSnapshot(engineRef.current!.getSnapshot());
   }, []);
 
   const metrics = calculateMetrics(snapshot, { includeKdph: true });
