@@ -8,6 +8,7 @@ export function PracticeText({
   variant = "default",
   krutiDev,
   unicodePreview,
+  unicodeText,
 }: {
   characters: CharacterState[];
   cursor: number;
@@ -21,7 +22,14 @@ export function PracticeText({
    * underneath, so the text is readable even when the font is missing. */
   krutiDev?: boolean;
   unicodePreview?: string;
+  /** Full Devanagari text of the passage. When given together with `krutiDev`,
+   * the passage is drawn in real Hindi (word by word) while you still type the
+   * Kruti Dev keys - no Kruti Dev font needed on the PC. */
+  unicodeText?: string;
 }) {
+  if (krutiDev && unicodeText && variant !== "premium") {
+    return <DevanagariWordView characters={characters} cursor={cursor} unicodeText={unicodeText} />;
+  }
   const fontClass = krutiDev ? "font-krutidev" : devanagari ? "font-devanagari" : "font-mono";
   const preview = krutiDev && unicodePreview ? (
     <p
@@ -87,5 +95,70 @@ export function PracticeText({
       ))}
     </div>
     </>
+  );
+}
+
+/** Shows a Kruti Dev passage as readable Hindi. The typed keys (ASCII) are tracked
+ * per character by the engine; here each word is mapped back to its Devanagari
+ * form and coloured by the state of the keys that make it up. */
+function DevanagariWordView({
+  characters,
+  cursor,
+  unicodeText,
+}: {
+  characters: CharacterState[];
+  cursor: number;
+  unicodeText: string;
+}) {
+  const uniTokens = unicodeText.split(/(\s+)/);
+  const tokens: { start: number; end: number; isSpace: boolean }[] = [];
+  let pos = 0;
+  const total = characters.length;
+  // Walk the key cells and group them into word / whitespace runs.
+  while (pos < total) {
+    const isSpace = /\s/.test(characters[pos].expected);
+    let end = pos + 1;
+    while (end < total && /\s/.test(characters[end].expected) === isSpace) end++;
+    tokens.push({ start: pos, end, isSpace });
+    pos = end;
+  }
+  // uniTokens alternates word, space, word, ... (may start with an empty word).
+  const uniWords = uniTokens.filter((_, i) => i % 2 === 0);
+  const uniSpaces = uniTokens.filter((_, i) => i % 2 === 1);
+  let wi = 0;
+  let si = 0;
+  const startsWithSpace = tokens.length > 0 && tokens[0].isSpace;
+  if (startsWithSpace) wi = 1; // skip the leading empty word
+
+  return (
+    <div
+      className="rounded-xl bg-white p-6 text-2xl leading-loose tracking-wide shadow font-devanagari dark:bg-slate-800"
+      style={{ wordBreak: "break-word" }}
+    >
+      {tokens.map((tk) => {
+        const cells = characters.slice(tk.start, tk.end);
+        const isCurrent = cursor >= tk.start && cursor < tk.end;
+        const anyWrong = cells.some((c) => c.status === "incorrect");
+        const allDone = cells.every((c) => c.status === "correct" || c.status === "corrected");
+        const anyCorrected = cells.some((c) => c.status === "corrected");
+        const label = tk.isSpace ? uniSpaces[si++] ?? " " : uniWords[wi++] ?? "";
+        let cls = "text-slate-400 dark:text-slate-500";
+        if (anyWrong) cls = "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400";
+        else if (allDone) cls = anyCorrected ? "text-amber-600 dark:text-amber-400" : "text-green-600 dark:text-green-400";
+        else if (cells.some((c) => c.status !== "pending")) cls = "text-slate-700 dark:text-slate-200";
+        return (
+          <span
+            key={tk.start}
+            className={clsx(
+              "whitespace-pre-wrap",
+              cls,
+              isCurrent && "border-b-2 border-brand-500 animate-pulse"
+            )}
+          >
+            {label}
+          </span>
+        );
+      })}
+    </div>
   );
 }
