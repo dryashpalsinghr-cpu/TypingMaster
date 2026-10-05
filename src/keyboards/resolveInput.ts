@@ -12,10 +12,14 @@ import type { KeyboardLayoutDefinition, KeyDefinition } from "../types";
 export function resolveKeyOutput(
   layout: KeyboardLayoutDefinition,
   code: string,
-  shift: boolean
+  shift: boolean,
+  capsLock = false
 ): string | null {
   const key = layout.keys.find((k) => k.code === code);
   if (!key) return null;
+  // Caps Lock flips the case of the letter keys, exactly like a real keyboard.
+  // (Unicode InScript letters have no upper/lower case, so it does not apply.)
+  if (capsLock && layout.id !== "unicode-inscript" && code.startsWith("Key")) shift = !shift;
   if (key.isModifier) {
     // Modifiers that do carry an output (Space, Enter, Tab) still return it.
     if (code === "Space") return " ";

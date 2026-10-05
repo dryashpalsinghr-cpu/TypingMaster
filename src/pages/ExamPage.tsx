@@ -5,7 +5,7 @@ import { useProfileContext } from "../contexts/ProfileContext";
 import { unicodeToKrutiDev, untypableChars } from "../converter/krutiDevCore";
 import { getKeyboardLayout, getKeyboardRows } from "../keyboards";
 import { findKeyForOutput, outputRequiresShift } from "../keyboards/resolveInput";
-import { deleteTemplate, getTemplates, computeExamMetrics, saveResult, saveTemplate } from "../services/examService";
+import { deleteTemplate, getTemplates, computeExamMetrics, saveResult, saveTemplate, scoreTyping } from "../services/examService";
 import type { ExamCategory, ExamResult, ExamTemplate } from "../types/exam";
 
 type Phase = "setup" | "running" | "result";
@@ -69,9 +69,7 @@ export function ExamPage() {
     if (!selected || !activeProfile?.id) { finishingRef.current = false; setPhase("setup"); return; }
     const finalTyped = typedRef.current;
     const target = selected.language === "hi" ? unicodeToKrutiDev(selected.passage) : selected.passage;
-    let correct = 0;
-    for (let i = 0; i < finalTyped.length; i++) if (finalTyped[i] === target[i]) correct++;
-    const errors = finalTyped.length - correct;
+    const { correctChars: correct, errors } = scoreTyping(finalTyped, target);
     const durationSeconds = Math.max(1, selected.durationSeconds - remainingRef.current);
     const metrics = computeExamMetrics({ typedChars: finalTyped.length, correctChars: correct, errors, keyDepressions: keyDepressionsRef.current, durationSeconds, minAccuracy: selected.minAccuracy, targetWpm: selected.targetWpm, targetKdph: selected.targetKdph });
     const row: ExamResult = {

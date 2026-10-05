@@ -299,7 +299,7 @@ export function LessonPracticePage() {
       // layout, regardless of the OS keyboard layout currently selected in
       // Windows - this is what makes Hindi InScript typing consistent in
       // the browser (spec section 10).
-      const resolved = resolveKeyOutput(layout, e.code, e.shiftKey);
+      const resolved = resolveKeyOutput(layout, e.code, e.shiftKey, e.getModifierState("CapsLock"));
       if (resolved === null) return;
       e.preventDefault();
 

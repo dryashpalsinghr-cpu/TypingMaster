@@ -6,16 +6,11 @@ import { enQwertyLayout } from "./enQwerty";
 // change, finger and hand assignment stay identical (spec section 5: use
 // KeyboardEvent.code, keep guidance consistent across layouts).
 //
-// IMPORTANT - accuracy note: this table implements the well-documented
-// "core" of the government-standard InScript layout (all vowel matras,
-// all independent vowels, virama/halant, anusvara, chandrabindu, visarga,
-// and the consonants used by this project's own lesson content). A
-// handful of rarer keys (retroflex ट/ठ, sibilant ष, a few nukta letters,
-// obscure shifted punctuation) are intentionally left unmapped rather
-// than guessed, consistent with this project's rule of never inventing
-// unverified mappings. Before using this for a real government exam,
-// cross-check the full chart against Windows' official InScript layout
-// (Control Panel > Language > Hindi > Keyboard: Devanagari - INSCRIPT).
+// This table follows the standard (CDAC / Windows) InScript layout: every
+// consonant, vowel, matra, halant, anusvara, chandrabindu, nukta and danda has
+// its own key, so any Hindi paragraph can be typed completely. The number-row
+// conjunct shortcuts (Shift+3..8) are not mapped - those conjuncts are typed
+// as consonant + halant + consonant, exactly like the Unicode text itself.
 interface HindiKeyOverride {
   normalLabel: string;
   shiftLabel?: string;
@@ -59,11 +54,12 @@ const OVERRIDES: Record<string, HindiKeyOverride> = {
   BracketLeft: { normalLabel: "ड", shiftLabel: "ढ", output: "ड", shiftOutput: "ढ" },
   BracketRight: {
     normalLabel: "़",
-    shiftLabel: "ज्ञ",
+    shiftLabel: "ञ",
     output: "़",
-    shiftOutput: "ज्ञ",
-    unicodeComposition: "nukta combining sign (normal); ज्ञ conjunct preset (shift)",
+    shiftOutput: "ञ",
+    unicodeComposition: "nukta combining sign (normal); ञ (shift)",
   },
+  Backslash: { normalLabel: "ॉ", shiftLabel: "ऑ", output: "ॉ", shiftOutput: "ऑ" },
 
   // Home row - virama/half-letter key, more matras/vowels, core consonants
   KeyA: { normalLabel: "ो", shiftLabel: "ओ", output: "ो", shiftOutput: "ओ" },
@@ -78,36 +74,37 @@ const OVERRIDES: Record<string, HindiKeyOverride> = {
   KeyF: { normalLabel: "ि", shiftLabel: "इ", output: "ि", shiftOutput: "इ" },
   KeyG: { normalLabel: "ु", shiftLabel: "उ", output: "ु", shiftOutput: "उ" },
   KeyH: { normalLabel: "प", shiftLabel: "फ", output: "प", shiftOutput: "फ" },
-  KeyJ: { normalLabel: "र", output: "र" },
+  KeyJ: { normalLabel: "र", shiftLabel: "ऱ", output: "र", shiftOutput: "ऱ" },
   KeyK: { normalLabel: "क", shiftLabel: "ख", output: "क", shiftOutput: "ख" },
   KeyL: { normalLabel: "त", shiftLabel: "थ", output: "त", shiftOutput: "थ" },
-  Semicolon: { normalLabel: "ॉ", output: "ॉ" },
-  Quote: {
+  Semicolon: { normalLabel: "च", shiftLabel: "छ", output: "च", shiftOutput: "छ" },
+  Quote: { normalLabel: "ट", shiftLabel: "ठ", output: "ट", shiftOutput: "ठ" },
+
+  // Bottom row - anusvara/chandrabindu and the remaining consonants
+  KeyZ: { normalLabel: "ॆ", shiftLabel: "ऎ", output: "ॆ", shiftOutput: "ऎ" },
+  KeyX: {
     normalLabel: "ं",
     shiftLabel: "ँ",
     output: "ं",
     shiftOutput: "ँ",
     unicodeComposition: "anusvara (normal) / chandrabindu (shift)",
   },
-
-  // Bottom row - remaining core consonants (a commonly-cited stable block)
   KeyC: { normalLabel: "म", shiftLabel: "ण", output: "म", shiftOutput: "ण" },
-  KeyV: { normalLabel: "न", output: "न" },
-  KeyB: { normalLabel: "व", output: "व" },
+  KeyV: { normalLabel: "न", shiftLabel: "ऩ", output: "न", shiftOutput: "ऩ" },
+  KeyB: { normalLabel: "व", shiftLabel: "ऴ", output: "व", shiftOutput: "ऴ" },
   KeyN: { normalLabel: "ल", shiftLabel: "ळ", output: "ल", shiftOutput: "ळ" },
   KeyM: { normalLabel: "स", shiftLabel: "श", output: "स", shiftOutput: "श" },
-  Comma: { normalLabel: ",", output: "," },
+  Comma: { normalLabel: ",", shiftLabel: "ष", output: ",", shiftOutput: "ष" },
   Period: { normalLabel: ".", shiftLabel: "।", output: ".", shiftOutput: "।", unicodeComposition: "purna viram (danda)" },
-  Slash: { normalLabel: "य", output: "य" },
+  Slash: { normalLabel: "य", shiftLabel: "य़", output: "य", shiftOutput: "य़" },
 };
 
 const hindiKeys: KeyDefinition[] = enQwertyLayout.keys.map((key) => {
   const override = OVERRIDES[key.code];
   if (!override) {
-    // Modifiers (Backspace, Tab, CapsLock, Enter, Shift, Space) and any key
-    // intentionally left unmapped (KeyZ, KeyX, Backquote, BracketRight
-    // extras, etc.) keep their English behaviour so the physical keyboard
-    // never goes "dead" - see file header note on unmapped keys.
+    // Modifiers (Backspace, Tab, CapsLock, Enter, Shift, Space) and the few
+    // keys without a Hindi letter (e.g. Backquote) keep their English
+    // behaviour so the physical keyboard never goes "dead".
     return { ...key };
   }
   return {

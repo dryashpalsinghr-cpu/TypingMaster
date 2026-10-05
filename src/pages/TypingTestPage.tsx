@@ -162,7 +162,7 @@ export function TypingTestPage() {
         setPressedCode("Backspace");
         return;
       }
-      const resolved = resolveKeyOutput(layout, e.code, e.shiftKey);
+      const resolved = resolveKeyOutput(layout, e.code, e.shiftKey, e.getModifierState("CapsLock"));
       if (resolved === null) return;
       e.preventDefault();
       const expectedNext = snapshot.characters[snapshot.cursor]?.expected[snapshot.characters[snapshot.cursor].typedBuffer.length];

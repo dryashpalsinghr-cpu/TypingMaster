@@ -54,3 +54,36 @@ export function computeExamMetrics(input: {
   const passed = netWpm >= input.targetWpm && kdph >= input.targetKdph && accuracy >= input.minAccuracy;
   return { grossWpm, netWpm, accuracy, kdph, passed };
 }
+
+/**
+ * Scores typed text against the target by ALIGNING them (edit distance), so one
+ * skipped or extra character costs one error - not every character after it.
+ * The target is matched as a prefix: you are only judged on what you reached.
+ */
+export function scoreTyping(typed: string, target: string): { correctChars: number; errors: number } {
+  const a = Array.from(typed);
+  const n = a.length;
+  if (n === 0) return { correctChars: 0, errors: 0 };
+  const b = Array.from(target).slice(0, n + 64);
+  const m = b.length;
+  // Rolling rows: dp[j] = cheapest way to turn the first i typed chars into the first j target chars.
+  let prev = new Int32Array(m + 1);
+  let curr = new Int32Array(m + 1);
+  for (let j = 0; j <= m; j++) prev[j] = j;
+  for (let i = 1; i <= n; i++) {
+    curr[0] = i;
+    const ai = a[i - 1];
+    for (let j = 1; j <= m; j++) {
+      const sub = prev[j - 1] + (ai === b[j - 1] ? 0 : 1);
+      const del = prev[j] + 1;
+      const ins = curr[j - 1] + 1;
+      curr[j] = sub < del ? (sub < ins ? sub : ins) : del < ins ? del : ins;
+    }
+    const t = prev; prev = curr; curr = t;
+  }
+  // The typed text may stop part-way through the target: take the best prefix match.
+  let best = prev[0];
+  for (let j = 1; j <= m; j++) if (prev[j] < best) best = prev[j];
+  const errors = Math.min(best, n);
+  return { correctChars: n - errors, errors };
+}

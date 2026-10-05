@@ -90,9 +90,17 @@ export async function getDashboardStats(profileId: number): Promise<DashboardSta
     .slice(0, 6)
     .map(([key]) => key);
 
-  const last7 = attempts.slice(-7);
-  const weeklyWpm = last7.map((a) => ({ date: toDateKey(a.dateTime), wpm: Math.round(a.netWpm) }));
-  const weeklyAccuracy = last7.map((a) => ({ date: toDateKey(a.dateTime), accuracy: Math.round(a.accuracy) }));
+  // Last 7 practice DAYS (one point per day = average of that day's attempts).
+  const perDay = new Map<string, { wpm: number; acc: number; n: number }>();
+  for (const a of attempts) {
+    const k = toDateKey(a.dateTime);
+    const d = perDay.get(k) ?? { wpm: 0, acc: 0, n: 0 };
+    d.wpm += a.netWpm; d.acc += a.accuracy; d.n += 1;
+    perDay.set(k, d);
+  }
+  const last7 = [...perDay.entries()].sort((x, y) => (x[0] < y[0] ? -1 : 1)).slice(-7);
+  const weeklyWpm = last7.map(([date, d]) => ({ date, wpm: Math.round(d.wpm / d.n) }));
+  const weeklyAccuracy = last7.map(([date, d]) => ({ date, accuracy: Math.round(d.acc / d.n) }));
 
   return {
     avgWpm,
@@ -121,10 +129,12 @@ export async function getLanguageProgress(profileId: number, language: TypingLan
   const attempts = await db.attempts
     .where("profileId")
     .equals(profileId)
-    .filter((a) => a.language === language && a.layout === layout)
+    .filter((a) => a.language === language)
     .toArray();
 
-  const lessonAttempts = attempts.filter((a) => a.kind === "lesson" && a.completed);
+  // Speed/accuracy count every attempt in this language (Kruti Dev, InScript ...);
+  // the lesson tick-count only counts lessons of the course shown on the dashboard.
+  const lessonAttempts = attempts.filter((a) => a.kind === "lesson" && a.completed && a.layout === layout);
   const completedLessonIds = new Set(lessonAttempts.filter((a) => a.passed).map((a) => a.lessonId));
 
   return {
