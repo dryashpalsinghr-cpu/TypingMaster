@@ -278,8 +278,7 @@ export function TypingTestPage() {
               </div>
               {isKruti && (
                 <p className="mt-2 text-xs text-slate-500 font-devanagari dark:text-slate-400">
-                  पैराग्राफ़ Kruti Dev के key-कोड में बदलकर दिखाया जाएगा (जैसे भारत = Hkkjr)। असली हिंदी रूप ऊपर अलग पंक्ति में दिखेगा।
-                  परीक्षा जैसा दृश्य पाने के लिए Kruti Dev 010 फ़ॉन्ट इंस्टॉल हो — देखे�� Font Setup।
+                  पैराग्राफ़ हिंदी (देवनागरी) में दिखेगा, और आप Kruti Dev 010 की-बोर्ड से टाइप करेंगे। ऊपर कीबोर्ड पर अगली की हाइलाइट होगी।
                 </p>
               )}
               {untypable.length > 0 && (
@@ -434,7 +433,7 @@ export function TypingTestPage() {
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_260px]">
         <div className="flex min-h-0 flex-col gap-3">
           <div ref={passageBoxRef} className="relative max-h-[190px] shrink-0 overflow-y-auto rounded-xl">
-            <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} krutiDev={isKruti} unicodePreview={selectedText && selectedText.text.length <= 600 ? selectedText.text : undefined} />
+            <PracticeText characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} krutiDev={isKruti} unicodeText={selectedText?.text} />
           </div>
           <div className="shrink-0">
             <VirtualKeyboard
