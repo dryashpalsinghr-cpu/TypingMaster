@@ -36,9 +36,11 @@ export async function createProfile(
     createdAt: now,
     lastActiveAt: now,
   };
-  const id = await db.profiles.add(profile);
-  await db.settings.add({ profileId: id as number, ...DEFAULT_SETTINGS });
-  return { ...profile, id: id as number };
+  return db.transaction("rw", db.profiles, db.settings, async () => {
+    const id = await db.profiles.add(profile);
+    await db.settings.add({ profileId: id as number, ...DEFAULT_SETTINGS });
+    return { ...profile, id: id as number };
+  });
 }
 
 export async function listProfiles(): Promise<Profile[]> {
@@ -67,17 +69,6 @@ export async function touchProfileActivity(
 }
 
 export async function deleteProfile(id: number): Promise<void> {
-  await db.transaction(
-    "rw",
-    [db.profiles, db.settings, db.attempts, db.certificates, db.dailyProgress],
-    async () => {
-      await db.profiles.delete(id);
-      await db.settings.where("profileId").equals(id).delete();
-      await db.attempts.where("profileId").equals(id).delete();
-      await db.certificates.where("profileId").equals(id).delete();
-      await db.dailyProgress.where("profileId").equals(id).delete();
-    }
-  );
   // Phase 5-7 data lives in separate databases; remove it too so deleting a
   // profile does not leave scores, analytics, exam results or certificates.
   await analyticsDb.transaction("rw", analyticsDb.keystrokes, analyticsDb.reviewSessions, async () => {
@@ -89,9 +80,22 @@ export async function deleteProfile(id: number): Promise<void> {
     await examDb.certificates.where("profileId").equals(id).delete();
   });
   await gamesDb.highScores.where("profileId").equals(id).delete();
+  await db.transaction(
+    "rw",
+    [db.profiles, db.settings, db.attempts, db.certificates, db.dailyProgress],
+    async () => {
+      await db.profiles.delete(id);
+      await db.settings.where("profileId").equals(id).delete();
+      await db.attempts.where("profileId").equals(id).delete();
+      await db.certificates.where("profileId").equals(id).delete();
+      await db.dailyProgress.where("profileId").equals(id).delete();
+    }
+  );
+
 }
 
 export async function ensureDemoProfile(): Promise<Profile> {
+  return db.transaction("rw", db.profiles, db.settings, async () => {
   const existing = await db.profiles.filter((p) => !!p.isDemo).first();
   if (existing) return existing;
 
@@ -111,4 +115,5 @@ export async function ensureDemoProfile(): Promise<Profile> {
   const id = await db.profiles.add(demo);
   await db.settings.add({ profileId: id as number, ...DEFAULT_SETTINGS });
   return { ...demo, id: id as number };
+  });
 }
