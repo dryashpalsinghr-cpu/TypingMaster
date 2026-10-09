@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ProfileProvider, useProfileContext, ACTIVE_PROFILE_STORAGE_KEY } from "./contexts/ProfileContext";
 import { AppLayout } from "./components/AppLayout";
@@ -21,13 +21,14 @@ import { ReviewPage } from "./pages/ReviewPage";
 import { GamesPage } from "./pages/GamesPage";
 import { BackupPage } from "./pages/BackupPage";
 import { getProfile } from "./services/profileService";
+import { readPreference, writePreference } from "./services/storage";
 function ProfileRestorer({ children }: { children: React.ReactNode }) {
   const { setActiveProfile } = useProfileContext();
   const [restored, setRestored] = useState(false);
   useEffect(() => {
-    const savedId = localStorage.getItem(ACTIVE_PROFILE_STORAGE_KEY);
+    const savedId = readPreference(ACTIVE_PROFILE_STORAGE_KEY);
     if (!savedId) { setRestored(true); return; }
-    void getProfile(Number(savedId)).then((p) => { if (p) setActiveProfile(p); setRestored(true); });
+    void getProfile(Number(savedId)).then((p) => { if (p) setActiveProfile(p); else writePreference(ACTIVE_PROFILE_STORAGE_KEY, null); }).catch(() => { writePreference(ACTIVE_PROFILE_STORAGE_KEY, null); }).finally(() => setRestored(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   if (!restored) return null;
@@ -60,6 +61,7 @@ export default function App() {
                 <Route path="/profiles" element={<ProfileSelectPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             <AppEnhancements />
           </BrowserRouter>

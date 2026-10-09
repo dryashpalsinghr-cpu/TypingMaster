@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { HelpCircle, DatabaseBackup, Compass, X } from "lucide-react";
 import { OnboardingTour } from "./OnboardingTour";
+import { readPreference, writePreference } from "../services/storage";
 const DONE_KEY = "tg-onboarding-done";
 export function AppEnhancements() {
   const navigate = useNavigate();
   const [tourOpen, setTourOpen] = useState(false);
   const [menu, setMenu] = useState(false);
-  useEffect(() => { if (!localStorage.getItem(DONE_KEY)) setTourOpen(true); }, []);
-  const closeTour = () => { localStorage.setItem(DONE_KEY, "1"); setTourOpen(false); };
+  useEffect(() => { if (!readPreference(DONE_KEY)) setTourOpen(true); }, []);
+  const closeTour = () => { writePreference(DONE_KEY, "1"); setTourOpen(false); };
   const goBackup = () => { closeTour(); setMenu(false); navigate("/backup"); };
   return (
     <>
@@ -21,7 +22,7 @@ export function AppEnhancements() {
         )}
         <button onClick={() => setMenu((m) => !m)} aria-label="Help and backup" className="grid h-12 w-12 place-items-center rounded-full bg-brand-600 text-white shadow-lg">{menu ? <X size={22} /> : <HelpCircle size={22} />}</button>
       </div>
-      <OnboardingTour open={tourOpen} onClose={closeTour} onGoBackup={goBackup} />
+      <OnboardingTour key={tourOpen ? "open" : "closed"} open={tourOpen} onClose={closeTour} onGoBackup={goBackup} />
     </>
   );
 }

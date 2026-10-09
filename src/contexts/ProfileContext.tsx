@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { Profile } from "../types";
 import { touchProfileActivity } from "../services/profileService";
+import { writePreference } from "../services/storage";
+import { useThemeContext } from "./ThemeContext";
 
 interface ProfileContextValue {
   activeProfile: Profile | null;
@@ -12,15 +14,17 @@ const ProfileContext = createContext<ProfileContextValue | null>(null);
 const STORAGE_KEY = "tg-active-profile-id";
 
 export function ProfileProvider({ children }: { children: ReactNode }) {
+  const { setInterfaceLanguage } = useThemeContext();
   const [activeProfile, setActiveProfileState] = useState<Profile | null>(null);
 
   const setActiveProfile = (p: Profile | null) => {
+    if (p && p.id !== activeProfile?.id) setInterfaceLanguage(p.preferredInterfaceLanguage);
     setActiveProfileState(p);
     if (p?.id) {
-      localStorage.setItem(STORAGE_KEY, String(p.id));
-      void touchProfileActivity(p.id);
+      writePreference(STORAGE_KEY, String(p.id));
+      void touchProfileActivity(p.id).catch(() => { /* Profile remains usable in memory. */ });
     } else {
-      localStorage.removeItem(STORAGE_KEY);
+      writePreference(STORAGE_KEY, null);
     }
   };
 
