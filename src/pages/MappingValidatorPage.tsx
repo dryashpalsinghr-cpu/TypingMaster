@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Grid3x3, Download, Upload, RotateCcw, Lock, AlertTriangle } from "lucide-react";
 import { getMergedLayout, upsertOverride, resetOverrides, getVerificationSummary, exportMappings, importMappings } from "../services/mappingService";
 import type { KeyboardLayoutId, KeyDefinition, KeyboardMappingVerification } from "../types";
+import { readPreference, writePreference } from "../services/storage";
 const PIN_KEY = "tg-mapping-admin-pin";
 const LAYOUTS: { id: KeyboardLayoutId; label: string }[] = [
   { id: "kruti-dev-010", label: "Kruti Dev 010" },
@@ -19,7 +20,7 @@ export function MappingValidatorPage() {
   const [unlocked, setUnlocked] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
-  const storedPin = typeof localStorage !== "undefined" ? localStorage.getItem(PIN_KEY) : null;
+  const storedPin = readPreference(PIN_KEY);
   const load = async (id: KeyboardLayoutId) => {
     const merged = await getMergedLayout(id);
     setKeys(merged);
@@ -48,7 +49,7 @@ export function MappingValidatorPage() {
           <p className="mt-2 text-sm text-slate-500">This tool edits legacy key mappings. Built-in mappings are immutable; you only add overrides. {storedPin ? "Enter the admin PIN to continue." : "Set an optional PIN or continue without one."}</p>
           <input value={pinInput} onChange={(e) => setPinInput(e.target.value)} type="password" placeholder="PIN" className="mt-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800" />
           <div className="mt-3 flex gap-2">
-            <button onClick={() => { if (!storedPin) { if (pinInput) localStorage.setItem(PIN_KEY, pinInput); setUnlocked(true); } else if (pinInput === storedPin) setUnlocked(true); }} className="rounded-md bg-brand-600 px-3 py-2 text-sm text-white">Unlock</button>
+            <button onClick={() => { if (!storedPin) { if (pinInput) { writePreference(PIN_KEY, pinInput); if (readPreference(PIN_KEY) !== pinInput) { alert("Could not save the PIN. Device storage is unavailable."); return; } } setUnlocked(true); } else if (pinInput === storedPin) setUnlocked(true); }} className="rounded-md bg-brand-600 px-3 py-2 text-sm text-white">Unlock</button>
             {!storedPin && <button onClick={() => setUnlocked(true)} className="rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700">Skip</button>}
           </div>
         </div>
