@@ -31,7 +31,7 @@ export function AppSidebar() {
           <div className="text-[10px] font-medium text-white/70">Master Your Typing Skills</div>
         </div>
       </div>
-      <nav className="flex-1 space-y-1 overflow-y-auto">
+      <nav id="app-navigation" aria-label="Main navigation" className="flex-1 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map(({ to, key, icon: Icon, color }) => (
           <NavLink key={to} to={to} className={({ isActive }) => clsx("pp-nav-item flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium", isActive && "pp-nav-item--active")}>
             {({ isActive }) => (
@@ -42,6 +42,7 @@ export function AppSidebar() {
             )}
           </NavLink>
         ))}
+        <NavLink to="/backup" className="pp-nav-item flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium">Backup &amp; Restore</NavLink>
       </nav>
       <div className="pp-sidebar-card mt-3 flex items-center gap-2 p-3">
         <Trophy size={22} className="shrink-0 text-yellow-300" />

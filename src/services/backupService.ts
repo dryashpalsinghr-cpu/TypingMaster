@@ -31,7 +31,7 @@ export async function listDatabaseNames(): Promise<string[]> {
   try {
     if (typeof indexedDB.databases === "function") {
       const infos = await indexedDB.databases();
-      const names = infos.map((i) => i.name).filter((n): n is string => !!n).filter((n) => n.startsWith("typeguru-"));
+      const names = infos.map((i) => i.name).filter((n): n is string => !!n).filter((n) => KNOWN_DBS.includes(n));
       if (names.length) return names;
     }
   } catch { /* fall through to known list */ }
@@ -54,7 +54,7 @@ export async function exportAll(): Promise<BackupFile> {
     databases[name] = dump;
   }
   const ls: Record<string, string> = {};
-  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k) ls[k] = localStorage.getItem(k) ?? ""; }
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k?.startsWith("tg-")) ls[k] = localStorage.getItem(k) ?? ""; } } catch { /* IndexedDB data remains exportable without preferences. */ }
   return { app: "TypeGuru Pro", kind: "backup", formatVersion: 1, createdAt: new Date().toISOString(), databases, localStorage: ls };
 }
 export async function countAll(): Promise<{ name: string; records: number }[]> {
@@ -72,15 +72,28 @@ export async function countAll(): Promise<{ name: string; records: number }[]> {
   return out;
 }
 export function isBackupFile(x: unknown): x is BackupFile {
-  const f = x as Partial<BackupFile> | null;
-  if (!f || f.app !== "TypeGuru Pro" || f.kind !== "backup" || f.formatVersion !== 1 || !f.databases || typeof f.databases !== "object") return false;
-  return Object.values(f.databases).every((db) => {
-    const dump = db as Partial<DbDump> | null;
-    return !!dump && Number.isInteger(dump.version) && !!dump.stores && typeof dump.stores === "object" &&
-      Object.values(dump.stores).every(Array.isArray);
-  });
+  const plain = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
+  if (!plain(x) || x.app !== "TypeGuru Pro" || x.kind !== "backup" || x.formatVersion !== 1 || !plain(x.databases)) return false;
+  if (x.localStorage !== undefined && (!plain(x.localStorage) || Object.values(x.localStorage).some((v) => typeof v !== "string"))) return false;
+  return Object.entries(x.databases).every(([name, dump]) => KNOWN_DBS.includes(name) && plain(dump) &&
+    Number.isInteger(dump.version) && (dump.version as number) > 0 && plain(dump.stores) &&
+    Object.values(dump.stores).every((rows) => Array.isArray(rows) && rows.every(plain)));
 }
 export async function importAll(file: BackupFile, opts: { clear?: boolean } = {}): Promise<{ dbCount: number; recordCount: number; skipped: string[] }> {
+  if (!isBackupFile(file)) throw new Error("Invalid or unsupported TypeGuru backup");
+  // Initialize all supported schemas before restoring a fresh device.
+  const [{ db }, { examDb }, { analyticsDb }, { gamesDb }] = await Promise.all([
+    import("../db/database"), import("../db/examDb"), import("../db/analyticsDb"), import("../db/gamesDb"),
+  ]);
+  await Promise.all([db.open(), examDb.open(), analyticsDb.open(), gamesDb.open()]);
+  const databases = new Map([db, examDb, analyticsDb, gamesDb].map((d) => [d.name, d]));
+  // Preflight every database before clearing any existing user records.
+  for (const [name, dump] of Object.entries(file.databases)) {
+    const target = databases.get(name)!;
+    if (dump.version > Math.round(target.verno * 10)) throw new Error("Backup was created by a newer app: " + name);
+    const tableNames = new Set(target.tables.map((t) => t.name));
+    if (Object.keys(dump.stores).some((s) => !tableNames.has(s))) throw new Error("Unsupported backup table in " + name);
+  }
   const clear = opts.clear ?? true;
   let dbCount = 0; let recordCount = 0; const skipped: string[] = [];
   for (const [name, dump] of Object.entries(file.databases)) {
@@ -90,15 +103,23 @@ export async function importAll(file: BackupFile, opts: { clear?: boolean } = {}
     const targetStores = Object.keys(dump.stores).filter((s) => existing.includes(s));
     if (targetStores.length === 0) { db.close(); skipped.push(name + " (open the app once so its storage exists)"); continue; }
     const tx = db.transaction(targetStores, "readwrite");
+    const done = txDone(tx);
+    let imported = 0;
+    try {
     for (const sn of targetStores) {
       const store = tx.objectStore(sn);
       if (clear) store.clear();
-      for (const rec of dump.stores[sn]) { store.put(rec); recordCount++; }
+      for (const rec of dump.stores[sn]) { store.put(rec); imported++; }
     }
-    await txDone(tx);
-    db.close();
+    await done;
+    recordCount += imported;
     dbCount++;
+    } catch (error) {
+      try { tx.abort(); } catch { /* Already finished. */ }
+      await done.catch(() => {});
+      throw error;
+    } finally { db.close(); }
   }
-  if (file.localStorage) { for (const [k, v] of Object.entries(file.localStorage)) localStorage.setItem(k, v); }
+  try { if (file.localStorage) { for (const [k, v] of Object.entries(file.localStorage)) if (k.startsWith("tg-")) localStorage.setItem(k, v); } } catch { skipped.push("Device preferences (localStorage unavailable)"); }
   return { dbCount, recordCount, skipped };
 }

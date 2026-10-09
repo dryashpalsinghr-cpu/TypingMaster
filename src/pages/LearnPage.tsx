@@ -1,3 +1,5 @@
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "../db/database";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2, Circle } from "lucide-react";
 import { allCourses, getLessonsForLanguage, getLessonsForLayout, hasLessonsForLayout } from "../data/lessons";
@@ -16,7 +18,10 @@ export function LearnPage() {
   const lessons = isLegacyLayout ? getLessonsForLayout(layout) : getLessonsForLanguage(typingLanguage);
   const course = allCourses.find((c) => c.id === lessons[0]?.courseId);
   const isHindi = typingLanguage === "hi";
-  const lastLessonIndex = activeProfile?.lastLessonId ? lessons.findIndex((l) => l.id === activeProfile.lastLessonId) : -1;
+  const passedAttempts = useLiveQuery(() => activeProfile?.id
+    ? db.attempts.where("profileId").equals(activeProfile.id).filter((a) => a.kind === "lesson" && a.completed && !!a.passed).toArray()
+    : Promise.resolve([]), [activeProfile?.id], []);
+  const completedIds = new Set(passedAttempts.map((a) => a.lessonId));
   return (
     <div className="space-y-6 p-6">
       <div>
@@ -39,8 +44,8 @@ export function LearnPage() {
             <h2 className="font-semibold font-devanagari">{interfaceLanguage === "hi" && course?.titleHi ? course.titleHi : course?.title}</h2>
           </div>
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-            {lessons.map((lesson, i) => {
-              const isCompleted = lastLessonIndex >= i;
+            {lessons.map((lesson) => {
+              const isCompleted = completedIds.has(lesson.id);
               const title = interfaceLanguage === "hi" && lesson.titleHi ? lesson.titleHi : lesson.title;
               const description = interfaceLanguage === "hi" && lesson.descriptionHi ? lesson.descriptionHi : lesson.description;
               return (

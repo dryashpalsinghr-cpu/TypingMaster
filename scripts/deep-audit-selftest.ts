@@ -1,0 +1,25 @@
+import assert from "node:assert/strict";
+import { summarizeAttempts } from "../src/services/progressSummary.ts";
+import { readPreference, writePreference } from "../src/services/storage.ts";
+import { isBackupFile, importAll } from "../src/services/backupService.ts";
+import type { AttemptResult } from "../src/types/index.ts";
+let checks = 0;
+function test(name: string, fn: () => void) { fn(); checks++; console.log("PASS", name); }
+const attempt = (changes: Partial<AttemptResult>) => ({ kind: "lesson", lessonId: "one", completed: true, passed: true, durationSec: 60, netWpm: 20, accuracy: 90, ...changes } as AttemptResult);
+test("daily average uses all attempts with equal weight", () => { const s = summarizeAttempts([attempt({netWpm:10}), attempt({netWpm:20}), attempt({netWpm:90})]); assert.equal(s.avgWpm, 40); });
+test("daily accuracy is arithmetic, not a running pairwise average", () => { assert.equal(summarizeAttempts([attempt({accuracy:60}), attempt({accuracy:90}), attempt({accuracy:99})]).avgAccuracy, 83); });
+test("repeated lesson does not inflate completed lesson count", () => { assert.equal(summarizeAttempts([attempt({}), attempt({}), attempt({lessonId:"two"})]).lessonsCompleted, 2); });
+test("failed and incomplete lessons are not counted as passed", () => { assert.equal(summarizeAttempts([attempt({passed:false}), attempt({completed:false}), attempt({kind:"test"})]).lessonsCompleted, 0); });
+test("all practice durations contribute to minutes", () => { assert.equal(summarizeAttempts([attempt({durationSec:30}), attempt({durationSec:90})]).minutesPracticed, 2); });
+test("empty daily summary is finite and zero", () => { assert.deepEqual(summarizeAttempts([]), {minutesPracticed:0,lessonsCompleted:0,avgWpm:0,avgAccuracy:0}); });
+Object.defineProperty(globalThis, "localStorage", { configurable: true, get() { throw new Error("Storage disabled"); } });
+test("storage read failure cannot crash startup", () => assert.equal(readPreference("tg-theme"), null));
+test("storage write/remove failures are nonfatal", () => { writePreference("tg-theme", "dark"); writePreference("tg-profile", null); });
+const map = new Map<string,string>();
+Object.defineProperty(globalThis, "localStorage", { configurable: true, value: { getItem: (k:string) => map.get(k) ?? null, setItem: (k:string,v:string) => map.set(k,v), removeItem: (k:string) => map.delete(k) } });
+test("preferences still persist when storage is available", () => { writePreference("tg-theme","dark"); assert.equal(readPreference("tg-theme"),"dark"); writePreference("tg-theme",null); assert.equal(readPreference("tg-theme"),null); });
+const valid = { app:"TypeGuru Pro",kind:"backup",formatVersion:1,createdAt:new Date().toISOString(),databases:{"typeguru-games-db":{version:10,stores:{highScores:[{id:1,score:10}]}}},localStorage:{"tg-theme":"dark"} };
+test("valid backup accepted", () => assert.equal(isBackupFile(valid),true));
+for (const [name, x] of Object.entries({"null backup":null,"wrong app":{...valid,app:"other"},"future format":{...valid,formatVersion:2},"invalid storage":{...valid,localStorage:{x:1}},"missing database map":{...valid,databases:null},"unknown database":{...valid,databases:{"other-db":{version:1,stores:{}}}},"negative database version":{...valid,databases:{"typeguru-pro-db":{version:-1,stores:{}}}},"malformed table rows":{...valid,databases:{"typeguru-pro-db":{version:30,stores:{profiles:[null]}}}}})) test("rejects " + name, () => assert.equal(isBackupFile(x),false));
+await assert.rejects(importAll({ ...valid, formatVersion:2 } as never), /Invalid or unsupported/); checks++; console.log("PASS invalid restore rejected before touching IndexedDB");
+console.log(`${checks} deep-audit regression checks passed.`);

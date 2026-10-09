@@ -1,4 +1,5 @@
 import { db } from "../db/database";
+import { summarizeAttempts } from "./progressSummary";
 import type { AttemptResult, TypingLanguage } from "../types";
 import { getLessonsForLayout } from "../data/lessons";
 
@@ -85,7 +86,7 @@ export async function getDashboardStats(profileId: number): Promise<DashboardSta
     }
   }
   const weakKeys = Object.entries(keyTotals)
-    .filter(([, s]) => s.attempts >= 3)
+    .filter(([, s]) => s.attempts >= 3 && s.errors > 0)
     .sort((a, b) => b[1].errors / b[1].attempts - a[1].errors / a[1].attempts)
     .slice(0, 6)
     .map(([key]) => key);
@@ -147,32 +148,17 @@ export async function getLanguageProgress(profileId: number, language: TypingLan
 }
 
 export async function saveAttempt(attempt: AttemptResult): Promise<number> {
-  const id = await db.attempts.add(attempt);
-  const todayKey = toDateKey(attempt.dateTime);
-  const existing = await db.dailyProgress
-    .where("profileId")
-    .equals(attempt.profileId)
-    .filter((d) => d.date === todayKey && d.language === attempt.language)
-    .first();
-
-  if (existing) {
-    await db.dailyProgress.update(existing.id as number, {
-      minutesPracticed: existing.minutesPracticed + attempt.durationSec / 60,
-      lessonsCompleted: existing.lessonsCompleted + (attempt.kind === "lesson" && attempt.completed ? 1 : 0),
-      avgWpm: (existing.avgWpm + attempt.netWpm) / 2,
-      avgAccuracy: (existing.avgAccuracy + attempt.accuracy) / 2,
-    });
-  } else {
-    await db.dailyProgress.add({
-      profileId: attempt.profileId,
-      language: attempt.language,
-      date: todayKey,
-      minutesPracticed: attempt.durationSec / 60,
-      lessonsCompleted: attempt.kind === "lesson" && attempt.completed ? 1 : 0,
-      avgWpm: attempt.netWpm,
-      avgAccuracy: attempt.accuracy,
-    });
-  }
-
-  return id as number;
+  return db.transaction("rw", db.attempts, db.dailyProgress, async () => {
+    const id = await db.attempts.add(attempt);
+    const date = toDateKey(attempt.dateTime);
+    const dailyAttempts = await db.attempts.where("profileId").equals(attempt.profileId)
+      .filter((a) => a.language === attempt.language && toDateKey(a.dateTime) === date).toArray();
+    const summary = summarizeAttempts(dailyAttempts);
+    const existing = await db.dailyProgress.where("profileId").equals(attempt.profileId)
+      .filter((d) => d.date === date && d.language === attempt.language).first();
+    const row = { profileId: attempt.profileId, language: attempt.language, date, ...summary };
+    if (existing?.id != null) await db.dailyProgress.update(existing.id, row);
+    else await db.dailyProgress.add(row);
+    return id as number;
+  });
 }

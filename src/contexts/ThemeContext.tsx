@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { InterfaceLanguage } from "../types";
+import { readPreference, writePreference } from "../services/storage";
 
 interface ThemeContextValue {
   theme: "light" | "dark";
@@ -12,20 +13,20 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<"light" | "dark">(
-    () => (localStorage.getItem("tg-theme") as "light" | "dark") || "light"
+    () => readPreference("tg-theme") === "dark" ? "dark" : "light"
   );
   const [interfaceLanguage, setInterfaceLanguage] = useState<InterfaceLanguage>(
-    () => (localStorage.getItem("tg-lang") as InterfaceLanguage) || "en"
+    () => readPreference("tg-lang") === "hi" ? "hi" : "en"
   );
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
-    localStorage.setItem("tg-theme", theme);
+    writePreference("tg-theme", theme);
   }, [theme]);
 
   useEffect(() => {
     document.documentElement.setAttribute("lang", interfaceLanguage);
-    localStorage.setItem("tg-lang", interfaceLanguage);
+    writePreference("tg-lang", interfaceLanguage);
   }, [interfaceLanguage]);
 
   const toggleTheme = () => setTheme((t) => (t === "light" ? "dark" : "light"));

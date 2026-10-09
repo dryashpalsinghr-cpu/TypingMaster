@@ -1,0 +1,18 @@
+.app-shell { height: 100vh; height: 100dvh; }
+.app-shell .pp-header { height: auto; min-height: 64px; flex-shrink: 0; padding-top: 8px; padding-bottom: 8px; }
+.mobile-menu-toggle, .mobile-nav-backdrop { display: none; }
+.app-shell :focus-visible { outline: 3px solid #1677e8; outline-offset: 3px; }
+@media (max-width: 767px) {
+  .mobile-menu-toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 16px; background: white; color: #0f2a52; border-bottom: 1px solid #cbd5e1; }
+  .app-shell .pp-header { padding-left: 16px; padding-right: 16px; }
+  .app-shell .pp-sidebar { display: none; }
+  .app-shell[data-nav-open="true"] .pp-sidebar { display: flex; position: fixed; top: 0; bottom: 0; left: 0; width: min(280px, 85vw); z-index: 60; }
+  .app-shell[data-nav-open="true"] .mobile-nav-backdrop { display: block; position: fixed; inset: 0; z-index: 55; background: rgb(15 23 42 / 60%); border: 0; }
+  .practice-premium { height: auto !important; min-height: 100%; }
+  .practice-premium .pp-seq { flex-wrap: wrap; justify-content: center; }
+  .practice-premium .pp-seq-group { flex-wrap: wrap; }
+  .practice-premium .pp-seq-divider { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell *, .app-shell *::before, .app-shell *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
