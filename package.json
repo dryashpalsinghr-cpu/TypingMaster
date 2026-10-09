@@ -9,7 +9,7 @@
     "typecheck": "tsc -b",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types scripts/typing-engine-selftest.ts && node --experimental-strip-types scripts/krutidev-selftest.ts"
+    "test": "node --experimental-strip-types scripts/typing-engine-selftest.ts && node --experimental-strip-types scripts/krutidev-selftest.ts && node --experimental-strip-types scripts/deep-audit-selftest.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1",
