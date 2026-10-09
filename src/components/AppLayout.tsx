@@ -13,9 +13,14 @@ export function AppLayout() {
   useEffect(() => setNavOpen(false), [location.pathname]);
   useEffect(() => {
     if (!navOpen) return;
+    const desktop = window.matchMedia("(min-width: 768px)");
+    if (desktop.matches) { setNavOpen(false); return; }
+    const onBreakpointChange = () => { if (desktop.matches) setNavOpen(false); };
+    desktop.addEventListener("change", onBreakpointChange);
     const links = Array.from(document.querySelectorAll<HTMLAnchorElement>("#app-navigation a"));
     links[0]?.focus();
     const close = (e: KeyboardEvent) => {
+      if (desktop.matches) return;
       if (e.key === "Escape") { setNavOpen(false); menuRef.current?.focus(); }
       if (e.key === "Tab" && links.length) {
         const first = links[0], last = links[links.length - 1];
@@ -24,7 +29,10 @@ export function AppLayout() {
       }
     };
     window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
+    return () => {
+      window.removeEventListener("keydown", close);
+      desktop.removeEventListener("change", onBreakpointChange);
+    };
   }, [navOpen]);
   if (!activeProfile) return <Navigate to="/" replace />;
   return <div className="app-shell flex overflow-hidden" data-nav-open={navOpen}>
