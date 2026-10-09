@@ -6,6 +6,7 @@ import { allCourses, getLessonsForLanguage, getLessonsForLayout, hasLessonsForLa
 import { useProfileContext } from "../contexts/ProfileContext";
 import { useThemeContext } from "../contexts/ThemeContext";
 import { useT } from "../hooks/useTranslation";
+import type { AttemptResult } from "../types";
 export function LearnPage() {
   const navigate = useNavigate();
   const { activeProfile } = useProfileContext();
@@ -20,7 +21,7 @@ export function LearnPage() {
   const isHindi = typingLanguage === "hi";
   const passedAttempts = useLiveQuery(() => activeProfile?.id
     ? db.attempts.where("profileId").equals(activeProfile.id).filter((a) => a.kind === "lesson" && a.completed && !!a.passed).toArray()
-    : Promise.resolve([]), [activeProfile?.id], []);
+    : Promise.resolve<AttemptResult[]>([]), [activeProfile?.id], [] as AttemptResult[]);
   const completedIds = new Set(passedAttempts.map((a) => a.lessonId));
   return (
     <div className="space-y-6 p-6">
