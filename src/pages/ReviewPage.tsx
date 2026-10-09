@@ -20,7 +20,15 @@ export function ReviewPage() {
   const savingRef = useRef(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const load = useCallback(async () => { if (!activeProfile?.id) return; setRecords(await getKeystrokes(activeProfile.id)); }, [activeProfile]);
+  const [historyLoading, setHistoryLoading] = useState(true);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const load = useCallback(async () => {
+    if (!activeProfile?.id) { setHistoryLoading(false); return; }
+    setHistoryLoading(true); setHistoryError(null);
+    try { setRecords(await getKeystrokes(activeProfile.id)); }
+    catch { setHistoryError("Could not load review history. Check device storage and retry."); }
+    finally { setHistoryLoading(false); }
+  }, [activeProfile?.id]);
   useEffect(() => { void load(); }, [load]);
   const weak = useMemo(() => getWeakKeys(records), [records]);
   const slow = useMemo(() => getSlowKeys(records), [records]);
@@ -34,7 +42,7 @@ export function ReviewPage() {
     return buildDrill([], []);
   };
   const start = () => {
-    if (savingRef.current) return;
+    if (savingRef.current || historyLoading || historyError) return;
     runningRef.current = true; typedRef.current = ""; setError(null);
     const d = makeDrill(mode);
     setDrill(d); setTyped(""); setSummary(null); setRunning(true);
@@ -79,11 +87,16 @@ export function ReviewPage() {
       <div className="flex items-center gap-2"><Target size={22} /><h1 className="text-xl font-bold">Personalized Review</h1></div>
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       <p className="text-sm text-slate-500 dark:text-slate-400">Drills are generated from YOUR real typing history. Each review session also records new keystroke data, so your Statistics get more accurate over time. Nothing here is simulated.</p>
-      {!hasData && <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">No history yet - start with the Home-row warmup to build your first data set.</div>}
+      {historyLoading && <p role="status">Loading review history...</p>}
+      {historyError && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+        <p>{historyError}</p>
+        <button disabled={historyLoading} onClick={() => void load()} className="mt-2 rounded-md border px-3 py-2">Retry history</button>
+      </div>}
+      {!historyLoading && !historyError && !hasData && <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">No history yet - start with the Home-row warmup to build your first data set.</div>}
       <div className="flex flex-wrap gap-2">
-        {(Object.keys(MODE_LABELS) as Mode[]).map((m) => { const disabled = (m === "weak-keys" && weak.length === 0) || (m === "slow-keys" && slow.length === 0) || (m === "bigrams" && bigrams.length === 0); return (<button key={m} disabled={running || saving || (disabled && hasData)} onClick={() => setMode(m)} className={(mode === m ? "bg-brand-600 text-white " : "border border-slate-300 dark:border-slate-700 ") + "rounded-md px-3 py-2 text-sm disabled:opacity-40"}>{MODE_LABELS[m]}{disabled ? " (no data)" : ""}</button>); })}
+        {(Object.keys(MODE_LABELS) as Mode[]).map((m) => { const disabled = (m === "weak-keys" && weak.length === 0) || (m === "slow-keys" && slow.length === 0) || (m === "bigrams" && bigrams.length === 0); return (<button key={m} disabled={running || saving || historyLoading || !!historyError || (disabled && hasData)} onClick={() => setMode(m)} className={(mode === m ? "bg-brand-600 text-white " : "border border-slate-300 dark:border-slate-700 ") + "rounded-md px-3 py-2 text-sm disabled:opacity-40"}>{MODE_LABELS[m]}{disabled ? " (no data)" : ""}</button>); })}
       </div>
-      {!running && (<button disabled={saving} onClick={start} className="flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm text-white"><Play size={16} />Start {MODE_LABELS[mode]} drill</button>)}
+      {!running && (<button disabled={saving || historyLoading || !!historyError} onClick={start} className="flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm text-white"><Play size={16} />Start {MODE_LABELS[mode]} drill</button>)}
       {(running || drill) && (
         <div className="space-y-3">
           <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 font-mono text-lg tracking-wide dark:border-slate-800 dark:bg-slate-900">
@@ -100,7 +113,7 @@ export function ReviewPage() {
             <div><div className="text-xs text-slate-500">Accuracy</div><div className="text-lg font-semibold">{summary.accuracy}%</div></div>
             <div><div className="text-xs text-slate-500">Avg / key</div><div className="text-lg font-semibold">{summary.avgDeltaMs}ms</div></div>
           </div>
-          <button disabled={saving} onClick={start} className="mt-4 flex items-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm dark:border-slate-700"><RotateCcw size={16} />Another drill</button>
+          <button disabled={saving || historyLoading || !!historyError} onClick={start} className="mt-4 flex items-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm dark:border-slate-700"><RotateCcw size={16} />Another drill</button>
         </div>
       )}
     </div>

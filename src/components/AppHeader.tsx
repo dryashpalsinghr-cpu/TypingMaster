@@ -16,10 +16,10 @@ export function AppHeader() {
   const savingRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const savePreferences = async (changes: Parameters<typeof updateProfile>[1]) => {
-    if (!activeProfile?.id || savingRef.current) return;
+    if (!activeProfile?.id || savingRef.current) return false;
     savingRef.current = true; setSaving(true); setError(null);
-    try { await updateProfile(activeProfile.id, changes); setActiveProfile({ ...activeProfile, ...changes }); }
-    catch { setError("Could not save profile preferences."); }
+    try { await updateProfile(activeProfile.id, changes); setActiveProfile({ ...activeProfile, ...changes }); return true; }
+    catch { setError("Could not save profile preferences."); return false; }
     finally { savingRef.current = false; setSaving(false); }
   };
   const changeTypingLanguage = async (language: TypingLanguage) => {
@@ -54,7 +54,7 @@ export function AppHeader() {
             </select>
           </label>
         )}
-        <select disabled={saving} aria-label="Interface language" value={interfaceLanguage} onChange={(e) => { const language = e.target.value as "en" | "hi"; setInterfaceLanguage(language); void savePreferences({ preferredInterfaceLanguage: language }); }} className="rounded-md border border-[#1677e8]/25 bg-white/80 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800">
+        <select disabled={saving} aria-label="Interface language" value={interfaceLanguage} onChange={async (e) => { const language = e.target.value as "en" | "hi"; if (await savePreferences({ preferredInterfaceLanguage: language })) setInterfaceLanguage(language); }} className="rounded-md border border-[#1677e8]/25 bg-white/80 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800">
           <option value="en">English</option><option value="hi">हिन्दी</option>
         </select>
         <button onClick={toggleTheme} className="rounded-md p-2 text-[#0a5bc4] hover:bg-[#1677e8]/10 dark:text-slate-300 dark:hover:bg-slate-800" aria-label="Toggle theme">{theme === "light" ? <Moon size={18} /> : <Sun size={18} />}</button>
