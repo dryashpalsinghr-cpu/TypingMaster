@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { getKeyboardLayout, getKeyboardRows } from "../keyboards";
+import { useKeyboardLayout } from "../hooks/useKeyboardLayout";
 import { enQwertyLayout } from "../keyboards/enQwerty";
 import { VirtualKeyboard } from "../components/VirtualKeyboard";
 import type { KeyboardLayoutId } from "../types";
@@ -9,9 +9,9 @@ const ENGLISH_HINTS = new Map(enQwertyLayout.keys.map((k) => [k.code, k.normalLa
 
 export function KeyboardChartPage() {
   const { interfaceLanguage } = useThemeContext();
+  const [showShift, setShowShift] = useState(false);
   const [selected, setSelected] = useState<KeyboardLayoutId>("en-qwerty");
-  const layout = getKeyboardLayout(selected);
-  const rows = getKeyboardRows(selected);
+  const { layout, rows } = useKeyboardLayout(selected);
   const isHindi = selected === "unicode-inscript";
   const isKruti = selected === "kruti-dev-010";
 
@@ -24,7 +24,7 @@ export function KeyboardChartPage() {
         </p>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <button
           onClick={() => setSelected("en-qwerty")}
           className={`rounded-md px-3 py-2 text-sm font-medium ${
@@ -53,6 +53,7 @@ export function KeyboardChartPage() {
         </button>
       </div>
 
+      {!isKruti && <button aria-pressed={showShift} onClick={() => setShowShift((value) => !value)} className="rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700">{interfaceLanguage === "hi" ? (showShift ? "सामान्य keys दिखाएँ" : "Shift keys दिखाएँ") : (showShift ? "Show normal keys" : "Show Shift keys")}</button>}
       <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
         <div className="mb-3 text-sm font-medium font-devanagari">
           {interfaceLanguage === "hi" ? layout.labelHi : layout.label}
@@ -62,7 +63,7 @@ export function KeyboardChartPage() {
           activeCode={null}
           pressedCode={null}
           pressedCorrect={null}
-          shiftActive={false}
+          shiftActive={showShift}
           shiftRequired={false}
           showFingerColors
           devanagari={isHindi || isKruti}

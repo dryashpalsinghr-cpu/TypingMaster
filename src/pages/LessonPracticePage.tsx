@@ -1,8 +1,11 @@
+import { unreachableCharacters } from "../keyboards/unreachable";
+import { useDialogFocus } from "../hooks/useDialogFocus";
+import { isTypingControl, shouldIgnorePracticeKey } from "../services/typingFocus";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { RotateCcw, Clock, Gauge, TrendingUp, Target, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { getLessonById, getLessonExercises, getLessonsForLayout } from "../data/lessons";
-import { getKeyboardLayout, getKeyboardRows } from "../keyboards";
+import { useKeyboardLayout } from "../hooks/useKeyboardLayout";
 import { enQwertyLayout } from "../keyboards/enQwerty";
 import { resolveKeyOutput, findKeyForOutput, outputRequiresShift } from "../keyboards/resolveInput";
 import { useTypingEngine } from "../hooks/useTypingEngine";
@@ -30,6 +33,16 @@ function tipForRow(row: string | undefined): string {
     default: return "Stay relaxed - accuracy first, speed follows naturally.";
   }
 }
+function hindiTipForRow(row: string | undefined): string {
+  switch (row) {
+    case "home": return "उंगलियाँ होम रो पर आराम से रखें।";
+    case "top": return "ऊपर की कुंजी दबाकर उंगली वापस होम रो पर लाएँ।";
+    case "bottom": return "कलाई स्थिर रखें और उंगली से नीचे की कुंजी दबाएँ।";
+    case "number": return "संख्या की कुंजी दबाने के बाद होम रो पर लौटें।";
+    case "space": return "स्पेस के लिए अंगूठे का इस्तेमाल करें।";
+    default: return "आराम से टाइप करें। पहले शुद्धता, फिर गति बढ़ाएँ।";
+  }
+}
 const ENGLISH_HINTS = new Map(enQwertyLayout.keys.map((k) => [k.code, k.normalLabel]));
 const LESSON_DURATION_MS = 5 * 60 * 1000;
 
@@ -49,12 +62,13 @@ function LessonPracticeSession() {
   const [chunk, setChunk] = useState(0);
   const exerciseIndex = chunk % exercises.length;
   const exercise = exercises[exerciseIndex];
-  const layout = getKeyboardLayout(lesson.layout);
-  const rows = getKeyboardRows(lesson.layout);
+  const { layout, rows, ready: mappingReady } = useKeyboardLayout(lesson.layout);
+  const missingKeys = useMemo(() => unreachableCharacters(layout, exercise.text), [layout, exercise.text]);
   const isHindi = lesson.language === "hi";
   const isKruti = lesson.layout === "kruti-dev-010";
   const { snapshot, typeCharacter, backspace, restart, loadText, pauseClock, metrics } = useTypingEngine(exercise.text, { strictMode: false, backspaceAllowed: true });
   const [shiftActive, setShiftActive] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
   const [pressedCode, setPressedCode] = useState<string | null>(null);
   const [pressedCorrect, setPressedCorrect] = useState<boolean | null>(null);
   const [savedExercises, setSavedExercises] = useState<Set<number>>(new Set());
@@ -67,6 +81,8 @@ function LessonPracticeSession() {
   }, [layoutLessons, lesson.id]);
   const [remainingMs, setRemainingMs] = useState(LESSON_DURATION_MS);
   const [lessonTimeUp, setLessonTimeUp] = useState(false);
+  const completeDialogRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(completeDialogRef, lessonTimeUp);
   const [lessonStarted, setLessonStarted] = useState(false);
   const lessonStartRef = useRef<number | null>(null);
   useEffect(() => {
@@ -162,12 +178,14 @@ function LessonPracticeSession() {
   const currentCell = snapshot.characters[snapshot.cursor];
   const nextNeededChar = currentCell ? currentCell.expected[currentCell.typedBuffer.length] ?? null : null;
   const activeKeyDef = !lessonTimeUp && nextNeededChar ? findKeyForOutput(layout, nextNeededChar) : null;
-  const shiftRequired = !lessonTimeUp && nextNeededChar ? outputRequiresShift(layout, nextNeededChar) : false;
+  const shiftRequired = !lessonTimeUp && nextNeededChar ? outputRequiresShift(layout, nextNeededChar, capsLock) : false;
   const keyboardStageRef = useRef<HTMLDivElement>(null);
-  const currentKeyLabel = !lessonTimeUp && nextNeededChar ? (nextNeededChar === " " ? "Space" : nextNeededChar) : null;
-  const currentTip = tipForRow(activeKeyDef?.row);
+  useEffect(() => { keyboardStageRef.current?.focus({ preventScroll: true }); }, [lesson.id]);
+  const currentKeyLabel = !lessonTimeUp && activeKeyDef ? (nextNeededChar === " " ? (interfaceLanguage === "hi" ? "स्पेस" : "Space") : nextNeededChar === activeKeyDef.shiftOutput && nextNeededChar !== activeKeyDef.output ? activeKeyDef.shiftLabel ?? activeKeyDef.normalLabel : activeKeyDef.normalLabel) : null;
+  const currentTip = interfaceLanguage === "hi" ? hindiTipForRow(activeKeyDef?.row) : tipForRow(activeKeyDef?.row);
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (lessonTimeUp) return;
+    if (lessonTimeUp || !mappingReady || missingKeys.length > 0 || e.key === "Tab" || shouldIgnorePracticeKey(e.target)) return;
+    setCapsLock(e.getModifierState("CapsLock"));
     if (e.key === "Shift") { setShiftActive(true); return; }
     if (snapshot.completed || e.ctrlKey || e.altKey || e.metaKey) return;
     if (e.key === "Backspace") { e.preventDefault(); backspace(); setPressedCode("Backspace"); return; }
@@ -177,7 +195,7 @@ function LessonPracticeSession() {
     if (lessonStartRef.current === null) { lessonStartRef.current = performance.now(); setLessonStarted(true); }
     const expectedNext = snapshot.characters[snapshot.cursor]?.expected[snapshot.characters[snapshot.cursor].typedBuffer.length];
     setPressedCode(e.code); setPressedCorrect(resolved === expectedNext); typeCharacter(resolved);
-  }, [backspace, typeCharacter, snapshot, layout, lessonTimeUp]);
+  }, [backspace, typeCharacter, snapshot, layout, lessonTimeUp, mappingReady, missingKeys.length]);
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
     if (e.key === "Shift") setShiftActive(false);
     setPressedCode(null); setPressedCorrect(null);
@@ -243,19 +261,21 @@ function LessonPracticeSession() {
         {isHindi && !isKruti && <p className="pp-glass px-4 py-2 text-xs text-[#2d4f7c] dark:text-slate-400 font-devanagari">{t("practice_input_mode")}: {layout.labelHi} — यह ऐप कुंजी-कोड आधारित मैपिंग उपयोग करता है, इसलिए Windows में InScript लेआउट सक्रिय किए बिना भी टाइपिंग सही काम करती है।{" "}<button onClick={() => navigate("/keyboard-chart")} className="underline">{t("practice_windows_setup")}</button></p>}
         {lastRoundPassed !== null && !lessonTimeUp && <div className="rounded-xl border border-green-200 bg-green-50/90 p-4 text-green-800 dark:border-green-900 dark:bg-green-900/20 dark:text-green-300"><p className="font-semibold">{lastRoundPassed ? t("practice_lesson_passed") : t("practice_lesson_retry")}</p></div>}
       </div>
+      {mappingReady && missingKeys.length > 0 && <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 font-devanagari">इस पाठ की कुछ keys उपलब्ध नहीं हैं: {missingKeys.join(" ")}। Keyboard Mapping Validator में override सुधारें या reset करें।</p>}
+      {!mappingReady && <p role="status" className="text-sm text-slate-500">{interfaceLanguage === "hi" ? "की-बोर्ड mapping लोड हो रही है…" : "Loading keyboard mappings…"}</p>}
       <div className="grid min-h-0 min-w-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
         <div className="flex min-h-0 min-w-0 flex-col gap-3">
           <div className="pp-glass shrink-0 basis-[18%]"><DualTypingSequence characters={snapshot.characters} cursor={snapshot.cursor} devanagari={isHindi} krutiDev={isKruti} /></div>
-          <div ref={keyboardStageRef} className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-3">
+          <div ref={keyboardStageRef} aria-busy={!mappingReady} tabIndex={0} aria-label="Typing practice area" onClick={(e) => { if (!isTypingControl(e.target)) keyboardStageRef.current?.focus({ preventScroll: true }); }} className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-3">
             <FingerConnector stageRef={keyboardStageRef} activeCode={activeKeyDef?.code ?? null} activeFinger={activeKeyDef?.finger ?? null} />
-            <div className="shrink-0 basis-[46%]"><VirtualKeyboard rows={rows} activeCode={activeKeyDef?.code ?? null} pressedCode={pressedCode} pressedCorrect={pressedCorrect} shiftActive={shiftActive} shiftRequired={shiftRequired} showFingerColors devanagari={isHindi} krutiDev={isKruti} physicalHints={isHindi && !isKruti ? ENGLISH_HINTS : undefined} variant="premium" /></div>
+            <div className="pp-keyboard-scroll shrink-0 basis-[46%]"><VirtualKeyboard rows={rows} activeCode={activeKeyDef?.code ?? null} pressedCode={pressedCode} pressedCorrect={pressedCorrect} shiftActive={shiftActive} shiftRequired={shiftRequired} showFingerColors devanagari={isHindi} krutiDev={isKruti} physicalHints={isHindi && !isKruti ? ENGLISH_HINTS : undefined} variant="premium" /></div>
             <div className="min-h-0 flex-1 basis-[54%]"><HandGuide activeFinger={activeKeyDef?.finger ?? null} variant="premium" /></div>
           </div>
         </div>
-        <SessionSidePanel variant="premium" progressLabel={t("session_progress")} progressRatio={progressRatio} timeLabel={t("session_time_left")} timeValue={formatClock(remainingMs / 1000)} timeUrgent={remainingMs <= 30_000} currentKeyLabel={currentKeyLabel} currentKeyCaption="Current Key" tip={currentTip} primaryLabel={t("session_next")} primaryDisabled={lessonTimeUp} onPrimary={advanceChunk} secondaryLabel={t("session_cancel")} onSecondary={() => navigate("/learn")} />
+        <SessionSidePanel variant="premium" progressLabel={t("session_progress")} progressRatio={progressRatio} timeLabel={t("session_time_left")} timeValue={formatClock(remainingMs / 1000)} timeUrgent={remainingMs <= 30_000} currentKeyLabel={currentKeyLabel} currentKeyCaption={interfaceLanguage === "hi" ? "अगली कुंजी" : "Current Key"} tip={currentTip} primaryLabel={t("session_next")} primaryDisabled={lessonTimeUp} onPrimary={advanceChunk} secondaryLabel={t("session_cancel")} onSecondary={() => navigate("/learn")} />
       </div>
       {lessonTimeUp && <div role="dialog" aria-modal="true" aria-labelledby="lesson-complete-title" className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4">
-        <div className="pp-glass w-full max-w-sm p-6 text-center !bg-white dark:!bg-slate-900">
+        <div ref={completeDialogRef} tabIndex={-1} className="pp-glass w-full max-w-sm p-6 text-center !bg-white dark:!bg-slate-900">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#1677e8] to-[#4ea8ff] text-white shadow-lg"><Clock size={22} /></div>
           <h2 id="lesson-complete-title" className="text-lg font-bold text-[#0f2a52] dark:text-slate-100 font-devanagari">{t("practice_lesson_complete_title")}</h2>
           <p className="mt-1 text-sm text-[#5c7599] dark:text-slate-400 font-devanagari">{t("practice_lesson_complete_body")}</p>

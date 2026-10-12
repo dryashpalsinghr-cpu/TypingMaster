@@ -278,3 +278,27 @@ body { font-family: "Noto Sans", system-ui, sans-serif; }
 
 /* Keep the next required key blue in dark mode too. */
 .dark .pp-key--active { color: #fff; background: linear-gradient(180deg, #3b82f6, #2563eb); border-color: #60a5fa; }
+
+/* Press feedback must beat the dark base key and the next-key highlight. */
+.dark .pp-key--correct { color: #166534; background: linear-gradient(180deg, #ecfdf3, #bbf7d0); border-color: #22c55e; }
+.dark .pp-key--wrong { color: #991b1b; background: linear-gradient(180deg, #fef2f2, #fecaca); border-color: #ef4444; }
+.dark .pp-seq-key--completed { color: #4ade80; background: rgba(34,197,94,0.14); border-color: rgba(34,197,94,0.4); }
+.dark .pp-seq-key--wrong { color: #fca5a5; background: rgba(239,68,68,0.18); border-color: #ef4444; }
+.dark .pp-seq-key--current { color: #8ed4ff; background: linear-gradient(180deg, #162d4f, #124376); border-color: #4ea8ff; }
+.pp-keyboard-scroll { overflow-x: auto; }
+@media (min-width: 1200px) { .practice-premium { min-height: 650px; } }
+@media (max-width: 1199px) {
+  .practice-premium { height: auto !important; min-height: 100%; }
+  .practice-premium .pp-keyboard { height: 235px; min-width: 620px; }
+  .practice-premium .pp-hands { height: 190px; }
+  .practice-premium .pp-seq { flex-wrap: wrap; }
+  .practice-premium .pp-seq-group { flex-wrap: wrap; }
+}
+
+.pp-seq-group { min-width: 0; flex-wrap: wrap; }
+@media (max-width: 1199px) { .practice-premium > .grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* Preserve the full numeric result when a stat card becomes narrow. */
+.pp-stat-card { flex-wrap: wrap; }
+.pp-stat-card > .min-w-0 { flex: 1 1 60px; }
+.pp-stat-label { overflow-wrap: anywhere; }

@@ -6,11 +6,9 @@ import { enQwertyLayout } from "./enQwerty";
 // change, finger and hand assignment stay identical (spec section 5: use
 // KeyboardEvent.code, keep guidance consistent across layouts).
 //
-// This table follows the standard (CDAC / Windows) InScript layout: every
-// consonant, vowel, matra, halant, anusvara, chandrabindu, nukta and danda has
-// its own key, so any Hindi paragraph can be typed completely. The number-row
-// conjunct shortcuts (Shift+3..8) are not mapped - those conjuncts are typed
-// as consonant + halant + consonant, exactly like the Unicode text itself.
+// This table follows the Windows InScript base and Shift layers.
+// AltGr-only extensions are not part of this practice layout. The number-row
+// conjunct shortcuts (Shift+3..8) coexist with consonant + halant sequences.
 interface HindiKeyOverride {
   normalLabel: string;
   shiftLabel?: string;
@@ -20,23 +18,25 @@ interface HindiKeyOverride {
 }
 
 const OVERRIDES: Record<string, HindiKeyOverride> = {
-  // Number row - digits are certain; visarga/vocalic-r are well attested
-  Digit1: { normalLabel: "१", output: "१" },
-  Digit2: { normalLabel: "२", output: "२" },
-  Digit3: { normalLabel: "३", output: "३" },
-  Digit4: { normalLabel: "४", output: "४" },
-  Digit5: { normalLabel: "५", output: "५" },
-  Digit6: { normalLabel: "६", output: "६" },
-  Digit7: { normalLabel: "७", output: "७" },
-  Digit8: { normalLabel: "८", output: "८" },
-  Digit9: { normalLabel: "९", output: "९" },
-  Digit0: { normalLabel: "०", output: "०" },
+  // Windows InScript base and Shift layers (Unicode CLDR chart).
+  // https://unicode.org/cldr/charts/43/keyboards/layouts/hi.html#hi-t-k0-windows
+  Backquote: { normalLabel: "ॊ", shiftLabel: "ऒ", output: "ॊ", shiftOutput: "ऒ" },
+  Digit1: { normalLabel: "1", shiftLabel: "ऍ", output: "1", shiftOutput: "ऍ" },
+  Digit2: { normalLabel: "2", shiftLabel: "ॅ", output: "2", shiftOutput: "ॅ" },
+  Digit3: { normalLabel: "3", shiftLabel: "्र", output: "3", shiftOutput: "्र" },
+  Digit4: { normalLabel: "4", shiftLabel: "र्", output: "4", shiftOutput: "र्" },
+  Digit5: { normalLabel: "5", shiftLabel: "ज्ञ", output: "5", shiftOutput: "ज्ञ" },
+  Digit6: { normalLabel: "6", shiftLabel: "त्र", output: "6", shiftOutput: "त्र" },
+  Digit7: { normalLabel: "7", shiftLabel: "क्ष", output: "7", shiftOutput: "क्ष" },
+  Digit8: { normalLabel: "8", shiftLabel: "श्र", output: "8", shiftOutput: "श्र" },
+  Digit9: { normalLabel: "9", shiftLabel: "(", output: "9", shiftOutput: "(" },
+  Digit0: { normalLabel: "0", shiftLabel: ")", output: "0", shiftOutput: ")" },
   Minus: { normalLabel: "-", shiftLabel: "ः", output: "-", shiftOutput: "ः" },
   Equal: {
     normalLabel: "ृ",
-    shiftLabel: "ॄ",
+    shiftLabel: "ऋ",
     output: "ृ",
-    shiftOutput: "ॄ",
+    shiftOutput: "ऋ",
     unicodeComposition: "vocalic-r matra, appears after the consonant it modifies",
   },
 
@@ -96,7 +96,7 @@ const OVERRIDES: Record<string, HindiKeyOverride> = {
   KeyM: { normalLabel: "स", shiftLabel: "श", output: "स", shiftOutput: "श" },
   Comma: { normalLabel: ",", shiftLabel: "ष", output: ",", shiftOutput: "ष" },
   Period: { normalLabel: ".", shiftLabel: "।", output: ".", shiftOutput: "।", unicodeComposition: "purna viram (danda)" },
-  Slash: { normalLabel: "य", shiftLabel: "य़", output: "य", shiftOutput: "य़" },
+  Slash: { normalLabel: "य", shiftLabel: "य़", output: "य", shiftOutput: "य़" },
 };
 
 const hindiKeys: KeyDefinition[] = enQwertyLayout.keys.map((key) => {

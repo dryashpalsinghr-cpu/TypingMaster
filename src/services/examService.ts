@@ -9,7 +9,15 @@ export async function getTemplates(): Promise<ExamTemplate[]> {
   return [...builtins, ...sortedCustom];
 }
 
+export function validateExamTemplate(t: ExamTemplate): void {
+  if (!t.name.trim() || !t.passage.trim()) throw new Error("Name and passage are required");
+  if (!Number.isInteger(t.durationSeconds) || t.durationSeconds <= 0) throw new Error("Duration must be a positive whole number of seconds");
+  if (![t.targetWpm, t.targetKdph, t.minAccuracy, t.focusLossLimit].every(Number.isFinite) || t.targetWpm < 0 || t.targetKdph < 0 || t.minAccuracy < 0 || t.minAccuracy > 100 || !Number.isInteger(t.focusLossLimit) || t.focusLossLimit < 0) throw new Error("Targets must be non-negative; accuracy must be between 0 and 100");
+  if (!["en", "hi"].includes(t.language)) throw new Error("Unsupported exam language");
+}
+
 export async function saveTemplate(t: ExamTemplate): Promise<number> {
+  validateExamTemplate(t);
   const toSave: ExamTemplate = { ...t, isBuiltIn: false, updatedAt: Date.now() };
   if (toSave.id && toSave.id > 0) {
     await examDb.examTemplates.update(toSave.id, toSave);

@@ -1,14 +1,9 @@
+import { FINGER_COLORS } from "../keyboards/fingerColors";
 import { useLayoutEffect, useRef, useState } from "react";
 import type { FingerId } from "../types";
 import typingHands from "../assets/typing-hands.png";
 import typingHandsPremium from "../assets/typing-hands-premium.png";
 
-const FINGER_COLORS: Record<FingerId, string> = {
-  "left-pinky": "#f97316", "left-ring": "#eab308", "left-middle": "#22c55e",
-  "left-index": "#0ea5e9", "left-thumb": "#94a3b8", "right-thumb": "#94a3b8",
-  "right-index": "#0ea5e9", "right-middle": "#ec4899", "right-ring": "#f43f5e",
-  "right-pinky": "#8b5cf6",
-};
 
 // Percentages are calibrated against the *actual image pixels* of
 // typing-hands.png (1882x824), i.e. 0%-100% left/top map onto the image

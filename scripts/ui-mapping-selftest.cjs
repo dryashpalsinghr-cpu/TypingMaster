@@ -1,0 +1,84 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const ts = require('typescript');
+const { JSDOM } = require('jsdom');
+require('fake-indexeddb/auto');
+const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost/', pretendToBeVisual: true });
+for (const key of ['window','document','Element','HTMLElement','HTMLInputElement','HTMLTextAreaElement','Event','KeyboardEvent','CustomEvent','MutationObserver']) global[key] = dom.window[key];
+Object.defineProperty(global, 'navigator', { value: dom.window.navigator, configurable: true });
+global.localStorage = dom.window.localStorage;
+global.requestAnimationFrame = dom.window.requestAnimationFrame.bind(dom.window);
+global.cancelAnimationFrame = dom.window.cancelAnimationFrame.bind(dom.window);
+global.ResizeObserver = class { observe() {} disconnect() {} unobserve() {} };
+global.CSS = { escape: s => s };
+global.IS_REACT_ACT_ENVIRONMENT = true;
+dom.window.indexedDB = global.indexedDB;
+dom.window.IDBKeyRange = global.IDBKeyRange;
+let fontLoaded = true;
+Object.defineProperty(document, 'fonts', { value: { load: async () => fontLoaded ? [{ status:'loaded' }] : [], check: () => true } });
+for (const extension of ['.ts','.tsx']) require.extensions[extension] = (module, filename) => {
+  module._compile(ts.transpileModule(fs.readFileSync(filename,'utf8'), { fileName:filename, compilerOptions: {module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true} }).outputText, filename);
+};
+for (const extension of ['.png','.css','.svg']) require.extensions[extension] = (module, filename) => { module.exports=filename; };
+const React = require('react');
+const { act } = React;
+const {createRoot} = require('react-dom/client');
+const App = require('../src/App.tsx').default;
+const { db } = require('../src/db/database.ts');
+const { examDb } = require('../src/db/examDb.ts');
+const { getKeyboardLayout,getKeyboardRows } = require('../src/keyboards/index.ts');
+const {resolveKeyOutput,findKeyForOutput,outputRequiresShift} = require('../src/keyboards/resolveInput.ts');
+const {mergeKeyboardOverrides} = require('../src/keyboards/mergeOverrides.ts');
+const {importMappings,upsertOverride,getMergedLayout} = require('../src/services/mappingService.ts');
+const {hasKrutiFont} = require('../src/services/legacyFont.ts');
+const {convertWithMappings} = require('../src/services/verifiedConversion.ts');
+const {validateExamTemplate} = require('../src/services/examService.ts');
+const delay = ms => new Promise(r => setTimeout(r, ms));
+let count=0;
+function check(name, fn) { fn(); console.log('PASS',name); count++; }
+function button(text) { const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===text); assert.ok(b,`Missing button: ${text}`); return b; }
+async function click(el) { await act(async()=>{el.click(); await delay(70);}); }
+async function go(path) { await act(async()=>{window.history.pushState({},'',path);window.dispatchEvent(new window.PopStateEvent('popstate'));});await act(async()=>{await delay(100);}); }
+async function key(target, code, keyText, opts={}) { await act(async()=>{ target.dispatchEvent(new KeyboardEvent('keydown',{code,key:keyText,bubbles:true,cancelable:true,...opts}));await delay(20);target.dispatchEvent(new KeyboardEvent('keyup',{code,key:keyText,bubbles:true,...opts}));await delay(20);}); }
+(async()=>{
+const en=getKeyboardLayout('en-qwerty'), hi=getKeyboardLayout('unicode-inscript'), kd=getKeyboardLayout('kruti-dev-010');
+check('Caps Lock and Shift resolve English case',()=>{assert.equal(resolveKeyOutput(en,'KeyA',false,true),'A');assert.equal(resolveKeyOutput(en,'KeyA',true,true),'a');});
+check('Shift guidance accounts for Caps Lock',()=>{assert.equal(outputRequiresShift(en,'A',true),false);assert.equal(outputRequiresShift(en,'a',true),true);assert.equal(outputRequiresShift(hi,'क',true),false);});
+check('Kruti physical input remains ASCII under Caps Lock',()=>assert.equal(resolveKeyOutput(kd,'KeyH',false,true),'H'));
+check('Windows InScript number row and Shift conjuncts match CLDR',()=>{for(let i=0;i<10;i++)assert.equal(resolveKeyOutput(hi,'Digit'+i,false),String(i));for(const [code,ch] of Object.entries({Digit1:'ऍ',Digit2:'ॅ',Digit3:'्र',Digit4:'र्',Digit5:'ज्ञ',Digit6:'त्र',Digit7:'क्ष',Digit8:'श्र',Digit9:'(',Digit0:')',Equal:'ऋ'})) assert.equal(resolveKeyOutput(hi,code,true),ch);});
+check('InScript ignores Caps Lock case',()=>assert.equal(resolveKeyOutput(hi,'KeyK',false,true),'क'));
+check('All layout rows use the same definitions as the input resolver',()=>{for(const id of ['en-qwerty','unicode-inscript','kruti-dev-010','remington-gail']){const l=getKeyboardLayout(id);for(const k of getKeyboardRows(id).flat())assert.deepEqual(k,l.keys.find(x=>x.code===k.code));assert.equal(new Set(l.keys.map(k=>k.code)).size,l.keys.length);}});
+check('Guidance prefers an unshifted output over a duplicate shifted output',()=>{const l={...en,keys:[{...en.keys[0],output:'x',shiftOutput:'a'}, {...en.keys.find(k=>k.code==='KeyA')}]};assert.equal(findKeyForOutput(l,'a').code,'KeyA');assert.equal(outputRequiresShift(l,'a'),false);});
+check('Unsupported mappings do not emit input',()=>{const m=mergeKeyboardOverrides(kd,[{layoutId:kd.id,code:'KeyD',status:'unsupported',updatedAt:''}]);assert.equal(resolveKeyOutput(m,'KeyD',false),null);});
+check('Verified mappings change normal output, Shift output and glyph label',()=>{const m=mergeKeyboardOverrides(kd,[{layoutId:kd.id,code:'KeyD',normalOutput:'x',shiftOutput:'X',unicodeEquivalent:'ग',status:'verified',updatedAt:''}]);assert.equal(resolveKeyOutput(m,'KeyD',false),'x');assert.equal(resolveKeyOutput(m,'KeyD',true),'X');assert.equal(m.keys.find(k=>k.code==='KeyD').normalLabel,'ग');});
+check('Verified converter pairs take precedence; unverified pairs do not',()=>{const pairs=[{layoutId:'kruti-dev-010',legacy:'CUSTOM',unicode:'भारत',verified:true}];assert.equal(convertWithMappings('भारत','u2k',pairs),'CUSTOM');assert.equal(convertWithMappings('CUSTOM','k2u',pairs),'भारत');assert.equal(convertWithMappings('भारत','u2k',[{...pairs[0],verified:false}]),'Hkkjr');});
+fontLoaded=false;assert.equal(await hasKrutiFont(),false);count++;console.log('PASS fallback font cannot masquerade as a loaded Kruti font');fontLoaded=true;assert.equal(await hasKrutiFont(),true);count++;
+const baseExport={kind:'typeguru-mapping-export',version:1,layoutId:'kruti-dev-010',exportedAt:'',overrides:[],conversions:[]};
+await assert.rejects(importMappings({...baseExport,version:2}),/Invalid/);count++;
+await assert.rejects(importMappings({...baseExport,overrides:[{layoutId:'kruti-dev-010',code:'KeyD',normalOutput:'x',status:'verified'},{layoutId:'remington-gail',code:'KeyF',normalOutput:'f',status:'verified'}]}),/does not match/);assert.equal(await db.keyboardLayoutOverrides.count(),0);count++;console.log('PASS invalid import cannot partially change mappings');
+await assert.rejects(upsertOverride({layoutId:'kruti-dev-010',code:'ShiftLeft',normalOutput:'a',status:'verified'}),/printable/);count++;
+await upsertOverride({layoutId:'kruti-dev-010',code:'KeyD',normalOutput:'x',shiftOutput:'X',unicodeEquivalent:'ग',status:'verified'});assert.equal((await getMergedLayout('kruti-dev-010')).find(k=>k.code==='KeyD').output,'x');await db.keyboardLayoutOverrides.clear();count++;
+await Promise.all([upsertOverride({layoutId:'kruti-dev-010',code:'KeyD',normalOutput:'d',status:'verified'}),upsertOverride({layoutId:'kruti-dev-010',code:'KeyD',normalOutput:'d',status:'verified'})]);assert.equal(await db.keyboardLayoutOverrides.count(),1);await db.keyboardLayoutOverrides.clear();count++;console.log('PASS concurrent saves do not create duplicate key overrides');
+await importMappings({...baseExport,overrides:[{layoutId:'kruti-dev-010',code:'KeyD',normalOutput:'d',shiftOutput:'D',status:'verified'}],conversions:[{layoutId:'kruti-dev-010',legacy:'CUSTOM',unicode:'भारत',verified:true}]});assert.equal(await db.keyboardLayoutOverrides.count(),1);assert.equal(await db.conversionMappings.count(),1);await db.keyboardLayoutOverrides.clear();await db.conversionMappings.clear();count++;console.log('PASS valid mapping imports commit keys and conversion pairs together');
+const valid={name:'Test',passage:'abc',language:'en',durationSeconds:60,targetWpm:0,targetKdph:0,minAccuracy:90,focusLossLimit:0};check('Invalid template durations and targets are rejected',()=>{validateExamTemplate(valid);for(const changes of [{durationSeconds:0},{durationSeconds:NaN},{minAccuracy:101},{targetWpm:-1},{passage:' '}])assert.throws(()=>validateExamTemplate({...valid,...changes}));});
+localStorage.setItem('tg-onboarding-done','1');
+const root=createRoot(document.getElementById('root'));await act(async()=>{root.render(React.createElement(App));await delay(100);});
+await click(button('New Profile'));const input=document.querySelector('input[placeholder="e.g. Priya"]');await act(async()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Mapping Regression');input.dispatchEvent(new Event('input',{bubbles:true}));});await click(button('Create Profile'));
+await go('/practice/en-b-01');assert.equal(document.activeElement.getAttribute('aria-label'),'Typing practice area');
+const stage=document.activeElement;
+const next=()=>document.querySelector('.pp-key--active')?.dataset.keyCode;
+const {getLessonById}=require('../src/data/lessons/index.ts');const lessonText=getLessonById('en-b-01').exercises[0].text;
+assert.equal(stage.getAttribute('aria-busy'),'false');assert.equal(next(),findKeyForOutput(en,lessonText[0]).code);
+await key(stage,findKeyForOutput(en,lessonText[0]).code,lessonText[0]);await key(stage,findKeyForOutput(en,lessonText[1]).code,lessonText[1]);assert.equal(next(),findKeyForOutput(en,lessonText[2]).code);count++;console.log('PASS mounted lesson accepts physical input and advances guidance');
+const restart=button('Restart');restart.focus();const focusedBefore=next();await key(restart,'Space',' ');assert.equal(next(),focusedBefore);count++;console.log('PASS buttons do not leak Space into typing');
+await click(document.querySelector('[aria-label="Help and backup"]'));
+await click(button('Replay tour'));
+const sequenceBefore=next();await key(document.querySelector('[aria-label="Close"]'),'KeyJ','j');assert.equal(next(),sequenceBefore);count++;console.log('PASS modal input does not leak into practice');await click(document.querySelector('[aria-label="Close"]'));
+await go('/exam');await click(button('Start selected test'));const textarea=document.querySelector('textarea');const clock=()=>document.querySelector('.tabular-nums').textContent;const before=clock();await act(async()=>{await delay(1100);});assert.equal(clock(),before);await key(textarea,'ShiftLeft','Shift');assert.equal(clock(),before);await key(textarea,'KeyA','ो');assert.equal(textarea.value,'a');await act(async()=>{await delay(1100);});assert.notEqual(clock(),before);count++;console.log('PASS mounted exam waits for input and resolves physical keys independently of OS language');
+const interfaceSelect=document.querySelector('select[aria-label="Interface language"]');await act(async()=>{interfaceSelect.value='hi';interfaceSelect.dispatchEvent(new Event('change',{bubbles:true}));await delay(80);});await act(async()=>{await delay(80);});assert.ok(document.querySelector('textarea'));assert.equal(document.querySelector('textarea').value,'a');await act(async()=>{interfaceSelect.value='en';interfaceSelect.dispatchEvent(new Event('change',{bubbles:true}));await delay(80);});await act(async()=>{await delay(80);});count++;console.log('PASS profile preference changes do not prematurely submit an exam');await click(button('Submit'));assert.ok(document.querySelector('h1').textContent.includes('Exam Result'));
+await click(button('Back to tests'));const templates=await require('../src/services/examService.ts').getTemplates();const hindiTemplate=templates.find(t=>t.language==='hi');const card=[...document.querySelectorAll('.cursor-pointer')].find(c=>c.textContent.includes(hindiTemplate.name));await click(card);await act(async()=>{await delay(80);});await click(button('Start selected test'));const hindiInput=document.querySelector('textarea');await key(hindiInput,'KeyH','भ',{shiftKey:true});assert.equal(hindiInput.value,'H');await key(hindiInput,'KeyK','ा');assert.equal(hindiInput.value,'Hk');count++;console.log('PASS mounted Hindi exam uses Kruti ASCII codes regardless of OS output');await click(button('Submit'));
+await go('/test');await click(button('Start Test'));const testClock=()=>document.body.textContent.match(/05:00|04:5[0-9]/)?.[0];const testBefore=testClock();await act(async()=>{await delay(1100);});assert.equal(testClock(),testBefore);await key(document.activeElement,'KeyA','a');await act(async()=>{await delay(1100);});assert.notEqual(testClock(),testBefore);count++;console.log('PASS mounted typing test starts on the first mapped key');
+await go('/practice/kd-b-01');await upsertOverride({layoutId:'kruti-dev-010',code:'KeyD',normalOutput:'x',shiftOutput:'X',unicodeEquivalent:'ग',status:'verified'});await act(async()=>{await delay(150);});const physicalD=document.querySelector('[data-key-code="KeyD"]');assert.ok(physicalD.textContent.includes('ग'));count++;console.log('PASS persisted mapping overrides reach mounted practice keyboard');assert.ok(document.querySelector('[role="alert"]').textContent.includes('keys'));count++;console.log('PASS missing outputs show a warning instead of silently running an impossible lesson');
+await act(async()=>{root.unmount();await delay(100);});await db.delete();await examDb.delete();dom.window.close();console.log(`${count} UI and mapping regression groups passed.`);
+})().catch(e=>{console.error(e);process.exit(1)});
+

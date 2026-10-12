@@ -32,3 +32,20 @@
 - Use Node 24 for the Windows workflow, run frontend tests/build before packaging, and fail artifact upload if no installer exists.
 
 Validation: production build, TypeScript, existing regression tests, nine practice-time regression checks, new curriculum keyboard-reachability checks, and lint (warnings only). Browser interaction testing was unavailable because Chromium could not be downloaded in this environment. Windows installer execution remains a manual check. Existing font and bundle-size build warnings remain.
+
+## 2026-10-13 — Deep UI and keyboard-mapping fixes
+
+- Apply saved physical-key overrides consistently to lessons, tests, exams and the keyboard chart. Update input outputs, visible glyph labels and guidance together. Disabled keys no longer emit text; impossible passages show a warning.
+- Correct Windows InScript base digits (0–9), Shift+1…0, conjunct shortcuts, Shift+= (ऋ), and the backquote/Shift-slash layer. Reference: https://unicode.org/cldr/charts/43/keyboards/layouts/hi.html#hi-t-k0-windows . This practice layout supports base and Shift layers; AltGr extensions are not implemented.
+- Resolve exam text through physical key codes instead of OS-dependent text. Preserve selection/correction behaviour, ignore empty pre-start deletions, and do not auto-submit when profile preferences change.
+- Account for Caps Lock in Shift guidance and highlight the opposite hand's Shift key. Use one finger-colour palette for hands and keys.
+- Restore green/red pressed-key feedback in dark mode. Show the Hindi glyph in Current Key and add Hindi coaching tips and primary exam labels.
+- Keep buttons, selects, links, modals and mobile navigation from leaking keystrokes into practice. Trap focus in dialogs and focus practice without automatically scrolling away from its title.
+- Correct numeric stat-card truncation on narrow screens and sequence clipping at 1024px. Use one column below 1200px, keep hands/keys at readable sizes, and allow horizontal keyboard scrolling on narrow screens. Recompute the connector after scrolling.
+- Validate complete mapping files before writing and import them transactionally. Serialize concurrent key saves, show validation/PIN/storage errors, exclude modifiers from key verification, and apply explicitly verified converter pairs.
+- Require a genuinely loaded Kruti font rather than accepting fallback-font checks. Disable legacy-font tests/exams when the font is unavailable; guided lessons still use Unicode key glyphs. Correct font preview/install instructions and remove a cached-status race.
+- Reject invalid exam templates and report a typing-test save failure instead of claiming the result was saved.
+
+Validation: production build and TypeScript passed; lint completed with warnings. All existing tests plus 28 UI/mapping regression groups passed, using real React screens and IndexedDB in JSDOM. Existing Kruti lesson key coverage and word round-trips reported 0 problems. Chromium checks passed at 1366×768, 1024×768, 800×700 and 390×844: no sequence overflow, readable key/hand dimensions, correct connector endpoint, dark feedback, first-input exam timing, missing-font blocking and the InScript Shift chart. No browser page errors were observed.
+
+Remaining manual checks: real Windows WebView/installer execution and glyph shapes against a locally installed, licensed Kruti Dev 010 font. Kruti glyph labels are still based on the documented community converter table; marked unverified symbols remain unverified. Remington GAIL has no built-in lessons or independently verified mapping. These are not guessed or represented as completed support.

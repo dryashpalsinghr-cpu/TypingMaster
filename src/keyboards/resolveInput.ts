@@ -27,7 +27,7 @@ export function resolveKeyOutput(
     if (code === "Tab") return "\t";
     return null;
   }
-  return shift ? key.shiftOutput ?? key.output : key.output;
+  return (shift ? key.shiftOutput ?? key.output : key.output) || null;
 }
 
 /** Find the key definition responsible for producing a given output character. */
@@ -37,13 +37,16 @@ export function findKeyForOutput(
 ): KeyDefinition | null {
   if (char === " ") return layout.keys.find((k) => k.code === "Space") ?? null;
   return (
-    layout.keys.find((k) => k.output === char || k.shiftOutput === char) ?? null
+    layout.keys.find((k) => k.output === char) ??
+    layout.keys.find((k) => k.shiftOutput === char) ?? null
   );
 }
 
 /** True when producing this character requires holding Shift on this layout. */
-export function outputRequiresShift(layout: KeyboardLayoutDefinition, char: string): boolean {
+export function outputRequiresShift(layout: KeyboardLayoutDefinition, char: string, capsLock = false): boolean {
   const key = findKeyForOutput(layout, char);
   if (!key) return false;
-  return key.shiftOutput === char && key.output !== char;
+  if (key.output === key.shiftOutput) return false;
+  const shifted = key.shiftOutput === char && key.output !== char;
+  return capsLock && layout.id !== "unicode-inscript" && key.code.startsWith("Key") ? !shifted : shifted;
 }

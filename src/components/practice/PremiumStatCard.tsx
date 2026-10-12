@@ -18,8 +18,8 @@ export function PremiumStatCard({
         <Icon size={18} strokeWidth={2.4} />
       </div>
       <div className="min-w-0">
-        <div className="pp-stat-value truncate">{value}</div>
-        <div className="pp-stat-label truncate">{label}</div>
+        <div className="pp-stat-value">{value}</div>
+        <div className="pp-stat-label">{label}</div>
       </div>
     </div>
   );

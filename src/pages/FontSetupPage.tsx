@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { Keyboard, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
-import { saveFontStatus, getFontStatus } from "../services/mappingService";
+import { hasKrutiFont } from "../services/legacyFont";
+import { saveFontStatus } from "../services/mappingService";
 const FONT_FAMILY = "KrutiDev010Local";
-const PREVIEW_TEXT = "vLrqkj";
+const PREVIEW_TEXT = "Hkkjr";
 export function FontSetupPage() {
   const [status, setStatus] = useState<"installed" | "missing" | "failed" | "unknown">("unknown");
   const [checking, setChecking] = useState(false);
@@ -10,15 +11,14 @@ export function FontSetupPage() {
     setChecking(true);
     try {
       if (typeof document === "undefined" || !("fonts" in document)) { setStatus("unknown"); return; }
-      try { await document.fonts.load(`16px "${FONT_FAMILY}"`); } catch { /* ignore */ }
-      const available = document.fonts.check(`16px "${FONT_FAMILY}"`);
+      const available = await hasKrutiFont();
       const next = available ? "installed" : "missing";
       setStatus(next);
       await saveFontStatus({ fontFamily: FONT_FAMILY, status: next });
     } catch { setStatus("failed"); }
     finally { setChecking(false); }
   }, []);
-  useEffect(() => { void getFontStatus(FONT_FAMILY).then((r) => { if (r) setStatus(r.status); }); void detect(); }, [detect]);
+  useEffect(() => { void detect(); }, [detect]);
   return (
     <div className="space-y-6 p-6">
       <div><h1 className="text-xl font-bold">Legacy Font Setup</h1><p className="text-sm text-slate-500 dark:text-slate-400">Kruti Dev and Remington GAIL are font-based legacy encodings. The Kruti Dev font is copyrighted, so it is NOT bundled with this app. Install a font you are licensed to use, then detect it here.</p></div>
@@ -33,7 +33,7 @@ export function FontSetupPage() {
         </div>
         <div className="mt-4 rounded-lg bg-slate-50 p-4 dark:bg-slate-800"><div className="text-xs text-slate-500">Preview (renders correctly only if the font is installed):</div><div className="font-krutidev mt-2 text-3xl">{PREVIEW_TEXT}</div></div>
       </section>
-      <section className="rounded-xl border border-slate-200 bg-white p-5 text-sm dark:border-slate-800 dark:bg-slate-900"><h2 className="font-semibold">How to install</h2><ol className="mt-2 list-decimal space-y-1 pl-5 text-slate-600 dark:text-slate-300"><li>Obtain a Kruti Dev 010 font file you are licensed to use.</li><li>Install it in your operating system (Windows: right-click the font file, then Install).</li><li>Register the same family name (“KrutiDev010Local”) via the CSS @font-face if you self-host the file, or rename the CSS family to match your installed font.</li><li>Return here and press Re-check.</li></ol><p className="mt-3 text-xs text-slate-400">This app never downloads or bundles the copyrighted font for you.</p></section>
+      <section className="rounded-xl border border-slate-200 bg-white p-5 text-sm dark:border-slate-800 dark:bg-slate-900"><h2 className="font-semibold">How to install</h2><ol className="mt-2 list-decimal space-y-1 pl-5 text-slate-600 dark:text-slate-300"><li>Obtain a Kruti Dev 010 font file you are licensed to use.</li><li>Install it in your operating system (Windows: right-click the font file, then Install).</li><li>The app recognises the installed families “Kruti Dev 010” and “KrutiDev010”. Restart the app after installing.</li><li>Return here and press Re-check.</li></ol><p className="mt-3 text-xs text-slate-400">This app never downloads or bundles the copyrighted font for you.</p></section>
     </div>
   );
 }

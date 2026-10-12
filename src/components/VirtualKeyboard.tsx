@@ -1,4 +1,5 @@
-import type { FingerId, KeyDefinition } from "../types";
+import { FINGER_COLORS } from "../keyboards/fingerColors";
+import type { KeyDefinition } from "../types";
 import clsx from "clsx";
 
 interface VirtualKeyboardProps {
@@ -28,18 +29,6 @@ interface VirtualKeyboardProps {
 // so it renders correctly even if the project's tailwind.config has no
 // "finger-*" colors defined - avoids the "background not showing" bug where
 // bg-finger-left-pinky/30 etc. silently compiled to nothing.
-const FINGER_COLORS: Record<FingerId, string> = {
-  "left-pinky": "#f97316",
-  "left-ring": "#eab308",
-  "left-middle": "#22c55e",
-  "left-index": "#06b6d4",
-  "left-thumb": "#94a3b8",
-  "right-thumb": "#94a3b8",
-  "right-index": "#8b5cf6",
-  "right-middle": "#ec4899",
-  "right-ring": "#f43f5e",
-  "right-pinky": "#0ea5e9",
-};
 
 function hexToRgba(hex: string, alpha: number): string {
   const h = hex.replace("#", "");
@@ -77,6 +66,8 @@ export function VirtualKeyboard({
   krutiDev,
   variant = "default",
 }: VirtualKeyboardProps) {
+  const targetHand = rows.flat().find((key) => key.code === activeCode)?.hand;
+  const hintedShiftCode = targetHand === "left" ? "ShiftRight" : "ShiftLeft";
   if (variant === "premium") {
     return (
       <div className="pp-keyboard min-w-0 select-none" aria-label="Virtual keyboard">
@@ -99,7 +90,7 @@ export function VirtualKeyboard({
                     isActive && "pp-key--active",
                     isPressed && pressedCorrect === true && "pp-key--correct",
                     isPressed && pressedCorrect === false && "pp-key--wrong",
-                    isShiftKey && (shiftActive || shiftRequired) && !isActive && "pp-key--shift-hint",
+                    isShiftKey && shiftRequired && key.code === hintedShiftCode && !isActive && "pp-key--shift-hint",
                     devanagari && !key.isModifier && "font-devanagari"
                   )}
                   style={{
@@ -147,7 +138,7 @@ export function VirtualKeyboard({
                   isPressed && pressedCorrect === true && "!bg-green-400 !text-white",
                   isPressed && pressedCorrect === false && "!bg-red-400 !text-white",
                   isPressed && "translate-y-[1px]",
-                  isShiftKey && (shiftActive || shiftRequired) && "!bg-sky-200",
+                  isShiftKey && shiftRequired && key.code === hintedShiftCode && "!bg-sky-200",
                   devanagari && !key.isModifier && "font-devanagari"
                 )}
                 style={{
@@ -166,7 +157,7 @@ export function VirtualKeyboard({
                     ? { borderColor: "#22c55e" }
                     : isPressed && pressedCorrect === false
                     ? { borderColor: "#ef4444" }
-                    : isShiftKey && (shiftActive || shiftRequired)
+                    : isShiftKey && shiftRequired && key.code === hintedShiftCode
                     ? { borderColor: "#38bdf8" }
                     : {}),
                 }}

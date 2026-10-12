@@ -1,27 +1,28 @@
+import { mergeKeyboardOverrides } from "../keyboards/mergeOverrides";
+import { validateOverride, validateMappingExport } from "./mappingValidation";
 import { db } from "../db/database";
 import { getKeyboardLayout } from "../keyboards";
 import type { KeyboardLayoutId, KeyboardLayoutOverride, KeyboardMappingVerification, MappingVerificationStatus, ConversionMapping, FontStatusRecord } from "../types";
 export interface MappingExport { kind: "typeguru-mapping-export"; version: 1; layoutId: KeyboardLayoutId; exportedAt: string; overrides: KeyboardLayoutOverride[]; conversions: ConversionMapping[]; }
 export async function getOverrides(layoutId: KeyboardLayoutId): Promise<KeyboardLayoutOverride[]> { return db.keyboardLayoutOverrides.where("layoutId").equals(layoutId).toArray(); }
 export async function upsertOverride(o: Omit<KeyboardLayoutOverride, "id" | "updatedAt"> & { updatedAt?: string }): Promise<void> {
-  const existing = await db.keyboardLayoutOverrides.where("[layoutId+code]").equals([o.layoutId, o.code]).first();
-  const row: KeyboardLayoutOverride = { layoutId: o.layoutId, code: o.code, normalOutput: o.normalOutput, shiftOutput: o.shiftOutput, unicodeEquivalent: o.unicodeEquivalent, status: o.status, sourceNote: o.sourceNote, updatedAt: new Date().toISOString() };
-  if (existing && existing.id != null) await db.keyboardLayoutOverrides.update(existing.id, row); else await db.keyboardLayoutOverrides.add(row);
+  validateOverride(o);
+  await db.transaction("rw", db.keyboardLayoutOverrides, async () => {
+    const existing = await db.keyboardLayoutOverrides.where("[layoutId+code]").equals([o.layoutId, o.code]).first();
+    const row: KeyboardLayoutOverride = { layoutId: o.layoutId, code: o.code, normalOutput: o.normalOutput, shiftOutput: o.shiftOutput, unicodeEquivalent: o.unicodeEquivalent, status: o.status, sourceNote: o.sourceNote, updatedAt: new Date().toISOString() };
+    if (existing?.id != null) await db.keyboardLayoutOverrides.update(existing.id, row); else await db.keyboardLayoutOverrides.add(row);
+  });
 }
 export async function resetOverrides(layoutId: KeyboardLayoutId): Promise<void> {
   await db.keyboardLayoutOverrides.where("layoutId").equals(layoutId).delete();
   await db.keyboardMappingVerification.where("layoutId").equals(layoutId).delete();
 }
 export async function getMergedLayout(layoutId: KeyboardLayoutId) {
-  const base = getKeyboardLayout(layoutId); const overrides = await getOverrides(layoutId);
-  const byCode = new Map(overrides.map((o) => [o.code, o]));
-  return base.keys.map((k) => {
-    const o = byCode.get(k.code); if (!o) return k;
-    return { ...k, legacyOutput: { normal: o.normalOutput ?? k.legacyOutput?.normal, shift: o.shiftOutput ?? k.legacyOutput?.shift, verified: o.status === "verified" }, unicodeEquivalent: o.unicodeEquivalent ?? k.unicodeEquivalent, mappingStatus: o.status, mappingSource: o.sourceNote ?? k.mappingSource };
-  });
+  return mergeKeyboardOverrides(getKeyboardLayout(layoutId), await getOverrides(layoutId)).keys;
 }
+
 export async function getVerificationSummary(layoutId: KeyboardLayoutId): Promise<KeyboardMappingVerification> {
-  const base = getKeyboardLayout(layoutId); const mappable = base.keys.filter((k) => !k.isModifier);
+  const base = getKeyboardLayout(layoutId); const mappable = base.keys.filter((k) => !k.isModifier && k.code !== "Space");
   const overrides = await getOverrides(layoutId); const byCode = new Map(overrides.map((o) => [o.code, o]));
   let verified = 0; let unverified = 0; let unsupported = 0;
   for (const k of mappable) {
@@ -48,9 +49,11 @@ export async function exportMappings(layoutId: KeyboardLayoutId): Promise<Mappin
   return { kind: "typeguru-mapping-export", version: 1, layoutId, exportedAt: new Date().toISOString(), overrides: await getOverrides(layoutId), conversions: await getConversionMappings(layoutId) };
 }
 export async function importMappings(data: MappingExport): Promise<number> {
-  if (!data || data.kind !== "typeguru-mapping-export") throw new Error("Invalid mapping file");
-  let count = 0;
-  for (const o of data.overrides ?? []) { const { id: _id, ...rest } = o; await upsertOverride(rest); count++; }
-  for (const c of data.conversions ?? []) { const { id: _id, ...rest } = c; await upsertConversionMapping(rest); count++; }
-  return count;
+  validateMappingExport(data);
+  return db.transaction("rw", db.keyboardLayoutOverrides, db.conversionMappings, async () => {
+    let count = 0;
+    for (const o of data.overrides) { const { id: _id, ...rest } = o; void _id; await upsertOverride(rest); count++; }
+    for (const c of data.conversions) { const { id: _id, ...rest } = c; void _id; await upsertConversionMapping(rest); count++; }
+    return count;
+  });
 }

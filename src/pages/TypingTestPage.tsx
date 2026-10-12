@@ -1,8 +1,11 @@
+import { unreachableCharacters } from "../keyboards/unreachable";
+import { useKrutiFont } from "../hooks/useKrutiFont";
+import { isTypingControl, shouldIgnorePracticeKey } from "../services/typingFocus";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RotateCcw } from "lucide-react";
 import { getTestTextsForLanguage, TEST_DURATIONS_MIN, type TestText } from "../data/testTexts";
-import { getKeyboardLayout, getKeyboardRows } from "../keyboards";
+import { useKeyboardLayout } from "../hooks/useKeyboardLayout";
 import { enQwertyLayout } from "../keyboards/enQwerty";
 import { resolveKeyOutput, findKeyForOutput, outputRequiresShift } from "../keyboards/resolveInput";
 import { useTypingEngine } from "../hooks/useTypingEngine";
@@ -25,7 +28,9 @@ export function TypingTestPage() {
   const { interfaceLanguage } = useThemeContext();
   const { activeProfile } = useProfileContext();
   const t = useT();
+  const workspaceRef = useRef<HTMLDivElement>(null);
   const [phase, setPhase] = useState<Phase>("setup");
+  useEffect(() => { if (phase === "running") workspaceRef.current?.focus({ preventScroll: true }); }, [phase]);
   const [testLanguage, setTestLanguage] = useState<TypingLanguage>("en");
   const [hindiLayout, setHindiLayout] = useState<"unicode-inscript" | "kruti-dev-010">("kruti-dev-010");
   const availableTexts = useMemo(() => getTestTextsForLanguage(testLanguage), [testLanguage]);
@@ -42,18 +47,21 @@ export function TypingTestPage() {
   const isHindi = testLanguage === "hi";
   const layoutId: KeyboardLayoutId = isHindi ? hindiLayout : selectedText?.layout ?? "en-qwerty";
   const isKruti = layoutId === "kruti-dev-010";
-  const layout = selectedText ? getKeyboardLayout(layoutId) : null;
-  const rows = selectedText ? getKeyboardRows(layoutId) : [];
+  const krutiFont = useKrutiFont(isKruti);
+  const { layout, rows, ready: mappingReady } = useKeyboardLayout(layoutId);
   const passage = useMemo(() => (!selectedText ? "" : isKruti ? unicodeToKrutiDev(selectedText.text) : selectedText.text), [selectedText, isKruti]);
-  const untypable = useMemo(() => (isKruti ? untypableChars(passage) : []), [passage, isKruti]);
+  const untypable = useMemo(() => [...new Set([...(isKruti ? untypableChars(passage) : []), ...unreachableCharacters(layout, passage)])], [passage, isKruti, layout]);
   const { snapshot, typeCharacter, backspace, restart, pauseClock } = useTypingEngine(passage, { strictMode: false, backspaceAllowed: true });
   const [shiftActive, setShiftActive] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
   const [pressedCode, setPressedCode] = useState<string | null>(null);
   const [pressedCorrect, setPressedCorrect] = useState<boolean | null>(null);
   const [remainingMs, setRemainingMs] = useState(0);
   const [finishedEarly, setFinishedEarly] = useState(false);
   const [usedMs, setUsedMs] = useState(0);
   const [finalMetrics, setFinalMetrics] = useState<ReturnType<typeof calculateMetrics> | null>(null);
+  const [savedSuccessfully, setSavedSuccessfully] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [savedOnce, setSavedOnce] = useState(false);
   const finalizedRef = useRef(false);
   const durationMsRef = useRef(0);
@@ -92,7 +100,7 @@ export function TypingTestPage() {
   const currentCell = snapshot.characters[snapshot.cursor];
   const nextNeededChar = currentCell ? currentCell.expected[currentCell.typedBuffer.length] ?? null : null;
   const activeKeyDef = layout && nextNeededChar ? findKeyForOutput(layout, nextNeededChar) : null;
-  const shiftRequired = layout && nextNeededChar ? outputRequiresShift(layout, nextNeededChar) : false;
+  const shiftRequired = layout && nextNeededChar ? outputRequiresShift(layout, nextNeededChar, capsLock) : false;
   const finishTest = useCallback((usedMs: number) => {
     if (finalizedRef.current) return;
     if (testStartRef.current === null) { setPhase("setup"); return; }
@@ -106,9 +114,9 @@ export function TypingTestPage() {
     setPhase("results");
   }, [pauseClock]);
   const startTest = () => {
-    if (!selectedText) return;
+    if (!selectedText || !mappingReady || krutiFont !== true) return;
     testStartRef.current = null; finalizedRef.current = false;
-    restart(); setFinishedEarly(false); setFinalMetrics(null); setSavedOnce(false);
+    restart(); setFinishedEarly(false); setFinalMetrics(null); setSavedOnce(false); setSavedSuccessfully(false); setSaveError(null);
     durationMsRef.current = durationMin * 60_000;
     setRemainingMs(durationMsRef.current); setPhase("running");
   };
@@ -132,7 +140,8 @@ export function TypingTestPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snapshot.completed, phase]);
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (phase !== "running" || !layout) return;
+    if (phase !== "running" || !mappingReady || e.key === "Tab" || shouldIgnorePracticeKey(e.target)) return;
+    setCapsLock(e.getModifierState("CapsLock"));
     if (e.key === "Shift") { setShiftActive(true); return; }
     if (snapshot.completed || e.ctrlKey || e.altKey || e.metaKey) return;
     if (e.key === "Backspace") { e.preventDefault(); backspace(); setPressedCode("Backspace"); return; }
@@ -142,7 +151,7 @@ export function TypingTestPage() {
     testStartRef.current ??= performance.now();
     const expectedNext = snapshot.characters[snapshot.cursor]?.expected[snapshot.characters[snapshot.cursor].typedBuffer.length];
     setPressedCode(e.code); setPressedCorrect(resolved === expectedNext); typeCharacter(resolved);
-  }, [phase, layout, backspace, typeCharacter, snapshot]);
+  }, [phase, layout, mappingReady, backspace, typeCharacter, snapshot]);
   const handleKeyUp = useCallback((e: KeyboardEvent) => {
     if (e.key === "Shift") setShiftActive(false);
     setPressedCode(null); setPressedCorrect(null);
@@ -175,7 +184,7 @@ export function TypingTestPage() {
       grossWpm: finalMetrics.grossWpm, netWpm: finalMetrics.netWpm, accuracy: finalMetrics.accuracy,
       keyStats, bigramStats: {}, completed: true,
       passed: (wpmTarget !== undefined || accTarget !== undefined) ? passed : undefined,
-    });
+    }).then(() => setSavedSuccessfully(true)).catch(() => setSaveError("Could not save this result. Check device storage."));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, savedOnce, finalMetrics, activeProfile, selectedText, testLanguage, usedMs, snapshot]);
   const progressRatio = phase === "running" ? 1 - remainingMs / Math.max(durationMsRef.current, 1) : 0;
@@ -190,6 +199,7 @@ export function TypingTestPage() {
         {isHindi && <div>
           <label className="mb-1 block text-xs font-medium uppercase text-slate-400">कीबोर्ड / Keyboard</label>
           <div className="flex flex-wrap gap-2">{([["unicode-inscript", "InScript (Unicode)"], ["kruti-dev-010", "Kruti Dev 010"]] as const).map(([id, label]) => <button key={id} onClick={() => setHindiLayout(id)} className={`rounded-lg border px-4 py-2 text-sm font-medium ${hindiLayout === id ? "border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300" : "border-slate-300 text-slate-600 dark:border-slate-600 dark:text-slate-300"}`}>{label}</button>)}</div>
+          {isKruti && krutiFont !== true && <p role="alert" className="mt-2 text-sm text-amber-700 font-devanagari">{krutiFont === null ? "फ़ॉन्ट जाँच रहा है…" : "Kruti Dev फ़ॉन्ट नहीं मिला। Font Setup से फ़ॉन्ट स्थापित करें या Unicode InScript चुनें।"}</p>}
           {isKruti && <p className="mt-2 text-xs text-slate-500 font-devanagari dark:text-slate-400">पैराग्राफ़ हिंदी (देवनागरी) में दिखेगा, और आप Kruti Dev 010 की-बोर्ड से टाइप करेंगे। ऊपर कीबोर्ड पर अगली की हाइलाइट होगी।</p>}
           {untypable.length > 0 && <p className="mt-2 rounded-md bg-amber-50 p-2 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300 font-devanagari">इस पैराग्राफ़ में कुछ चिह्न ({untypable.join(" ")}) सामान्य कीबोर्ड से टाइप नहीं हो सकते। कोई दूसरा पैराग्राफ़ चुनें।</p>}
         </div>}
@@ -205,7 +215,7 @@ export function TypingTestPage() {
           <div><label className="mb-1 block text-xs font-medium uppercase text-slate-400">{t("test_target_wpm")}</label><input type="number" min={0} value={targetWpm} onChange={(e) => setTargetWpm(e.target.value)} placeholder="e.g. 30" className="w-full rounded-lg border border-slate-300 bg-white p-2 text-sm dark:border-slate-600 dark:bg-slate-800" /></div>
           <div><label className="mb-1 block text-xs font-medium uppercase text-slate-400">{t("test_target_accuracy")}</label><input type="number" min={0} max={100} value={targetAccuracy} onChange={(e) => setTargetAccuracy(e.target.value)} placeholder="e.g. 95" className="w-full rounded-lg border border-slate-300 bg-white p-2 text-sm dark:border-slate-600 dark:bg-slate-800" /></div>
         </div>
-        <button onClick={startTest} disabled={!selectedText || untypable.length > 0} className="w-full rounded-lg bg-brand-600 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300">{t("test_start")}</button>
+        <button onClick={startTest} disabled={!selectedText || !mappingReady || krutiFont !== true || untypable.length > 0} className="w-full rounded-lg bg-brand-600 px-4 py-3 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300">{t("test_start")}</button>
       </div>
     </div>
   );
@@ -225,14 +235,15 @@ export function TypingTestPage() {
         <ResultPill label={t("test_errors")} value={snapshot.uncorrectedErrors} />
         <ResultPill label={t("test_duration_used")} value={formatClock(usedMs / 1000)} />
       </div>
-      {activeProfile?.id && <p className="text-xs text-slate-400">{t("test_saved")}</p>}
+      {saveError && <p role="alert" className="text-sm text-red-600">{saveError}</p>}
+      {activeProfile?.id && !saveError && <p className="text-xs text-slate-400">{savedSuccessfully ? t("test_saved") : "Saving result…"}</p>}
       <div className="flex gap-3">
         <button onClick={startTest} className="flex-1 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">{t("test_retry")}</button>
         <button onClick={() => setPhase("setup")} className="flex-1 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-800">{t("test_new")}</button>
       </div>
     </div>;
   }
-  return <div className="mx-auto flex h-full max-w-6xl flex-col gap-3 p-4 practice-workspace">
+  return <div ref={workspaceRef} tabIndex={0} aria-label="Typing test area" onClick={(e) => { if (!isTypingControl(e.target)) workspaceRef.current?.focus({ preventScroll: true }); }} className="mx-auto flex h-full max-w-6xl flex-col gap-3 p-4 practice-workspace">
     <div className="flex shrink-0 items-center justify-between">
       <h1 className="text-lg font-bold font-devanagari">{t("test_title")}</h1>
       <button onClick={() => finishTest(durationMsRef.current - remainingMs)} className="flex items-center gap-2 rounded-md border border-slate-300 px-3 py-1.5 text-xs hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800"><RotateCcw size={12} /> {t("session_finish")}</button>

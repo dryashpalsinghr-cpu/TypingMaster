@@ -63,10 +63,12 @@ export function FingerConnector({
     const observer = new ResizeObserver(recompute);
     observer.observe(stage);
     window.addEventListener("resize", recompute);
+    stage.addEventListener("scroll", recompute, true);
     return () => {
       followUps.forEach((id) => window.clearTimeout(id));
       observer.disconnect();
       window.removeEventListener("resize", recompute);
+      stage.removeEventListener("scroll", recompute, true);
     };
   }, [stageRef, activeCode, activeFinger]);
 

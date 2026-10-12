@@ -1,13 +1,16 @@
 import { useMemo, useState } from "react";
 import { ArrowLeftRight } from "lucide-react";
-import { krutiDevToUnicode, unicodeToKrutiDev } from "../converter/krutiDevCore";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "../db/database";
+import { convertWithMappings } from "../services/verifiedConversion";
 
 export function ConverterPage() {
   const [direction, setDirection] = useState<"k2u" | "u2k">("u2k");
   const [input, setInput] = useState("");
+  const mappings = useLiveQuery(() => db.conversionMappings.where("layoutId").equals("kruti-dev-010").toArray(), [], []);
   const output = useMemo(
-    () => (direction === "k2u" ? krutiDevToUnicode(input) : unicodeToKrutiDev(input)),
-    [input, direction]
+    () => convertWithMappings(input, direction, mappings),
+    [input, direction, mappings]
   );
   const btn = (active: boolean) =>
     active
