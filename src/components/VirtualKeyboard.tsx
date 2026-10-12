@@ -143,7 +143,7 @@ export function VirtualKeyboard({
                     ? "border-slate-200 bg-slate-100 text-slate-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
                     : "text-slate-700 dark:text-slate-200",
                   !key.isModifier && !applyFingerTint && "bg-slate-50 dark:bg-slate-800",
-                  isActive && "!bg-amber-300 !text-amber-950 shadow-[0_0_0_3px_rgba(251,191,36,0.35)]",
+                  isActive && "!bg-blue-500 !text-white shadow-[0_0_0_3px_rgba(59,130,246,0.35)]",
                   isPressed && pressedCorrect === true && "!bg-green-400 !text-white",
                   isPressed && pressedCorrect === false && "!bg-red-400 !text-white",
                   isPressed && "translate-y-[1px]",
@@ -161,7 +161,7 @@ export function VirtualKeyboard({
                     ? { borderColor: "transparent" }
                     : {}),
                   ...(isActive
-                    ? { borderColor: "#fbbf24" }
+                    ? { borderColor: "#2563eb" }
                     : isPressed && pressedCorrect === true
                     ? { borderColor: "#22c55e" }
                     : isPressed && pressedCorrect === false

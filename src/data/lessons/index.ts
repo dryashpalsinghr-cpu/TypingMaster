@@ -3,8 +3,9 @@ import { englishBeginnerCourse, englishBeginnerLessons } from "./englishBeginner
 import { hindiBeginnerCourse, hindiBeginnerLessons } from "./hindiInscriptBeginner";
 import { krutiDevBeginnerCourse, krutiDevBeginnerLessons } from "./krutiDevBeginner";
 import { remingtonGailBeginnerCourse, remingtonGailBeginnerLessons } from "./remingtonGailBeginner";
+import { englishExtendedLessons, hindiSpeedLessons } from "./extendedPractice";
 export const allCourses: Course[] = [englishBeginnerCourse, hindiBeginnerCourse, krutiDevBeginnerCourse, remingtonGailBeginnerCourse];
-export const allLessons: Lesson[] = [...englishBeginnerLessons, ...hindiBeginnerLessons, ...krutiDevBeginnerLessons, ...remingtonGailBeginnerLessons];
+export const allLessons: Lesson[] = [...englishBeginnerLessons, ...hindiBeginnerLessons, ...krutiDevBeginnerLessons, ...remingtonGailBeginnerLessons, ...englishExtendedLessons, ...hindiSpeedLessons];
 export function getLessonsForLanguage(language: TypingLanguage): Lesson[] { return allLessons.filter((l) => l.language === language).sort((a, b) => a.order - b.order); }
 export function getLessonsForLayout(layout: KeyboardLayoutId): Lesson[] { return allLessons.filter((l) => l.layout === layout).sort((a, b) => a.order - b.order); }
 export function hasLessonsForLayout(layout: KeyboardLayoutId): boolean { return getLessonsForLayout(layout).length > 0; }

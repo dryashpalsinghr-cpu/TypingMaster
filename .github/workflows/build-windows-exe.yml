@@ -16,13 +16,18 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install frontend dependencies
         run: npm ci
+
+      - name: Verify frontend
+        run: |
+          npm test
+          npm run build
 
       - name: Build Tauri Windows app
         uses: tauri-apps/tauri-action@v0
@@ -32,6 +37,7 @@ jobs:
       - name: Upload EXE/MSI artifact
         uses: actions/upload-artifact@v4
         with:
+          if-no-files-found: error
           name: TypeGuruPro-Windows
           path: |
             src-tauri/target/release/bundle/msi/*.msi

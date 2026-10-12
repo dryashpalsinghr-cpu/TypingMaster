@@ -35,6 +35,11 @@ const LESSON_DURATION_MS = 5 * 60 * 1000;
 
 export function LessonPracticePage() {
   const { lessonId } = useParams();
+  return <LessonPracticeSession key={lessonId} />;
+}
+
+function LessonPracticeSession() {
+  const { lessonId } = useParams();
   const navigate = useNavigate();
   const { activeProfile, setActiveProfile } = useProfileContext();
   const { interfaceLanguage } = useThemeContext();
@@ -105,7 +110,7 @@ export function LessonPracticePage() {
   const partialSavedRef = useRef<string | null>(null);
   const savePartialAttempt = useCallback(() => {
     const { snapshot: original, lesson: l, profileId } = latestRef.current;
-    const s = { ...original, elapsedMs: original.startedAt === null ? 0 : Math.max(0, performance.now() - original.startedAt) };
+    const s = { ...original, elapsedMs: original.startedAt === null ? 0 : Math.max(0, Math.min(performance.now(), lessonStartRef.current === null ? performance.now() : lessonStartRef.current + LESSON_DURATION_MS) - original.startedAt) };
     const m = calculateMetrics(s, { includeKdph: true });
     if (!profileId || s.completed || s.totalKeystrokes === 0) return;
     const key = `${l.id}:${s.startedAt}`;
@@ -120,7 +125,7 @@ export function LessonPracticePage() {
     }
     void saveAttempt({
       profileId, language: l.language, layout: l.layout, courseId: l.courseId, lessonId: l.id,
-      kind: "lesson", dateTime: new Date().toISOString(), durationSec: Math.round(s.elapsedMs / 1000),
+      kind: "lesson", dateTime: new Date().toISOString(), durationSec: s.elapsedMs / 1000,
       totalKeystrokes: s.totalKeystrokes,
       correctKeystrokes: s.totalKeystrokes - (s.incorrectKeystrokes ?? s.uncorrectedErrors),
       incorrectKeystrokes: s.incorrectKeystrokes ?? s.uncorrectedErrors,
@@ -195,7 +200,7 @@ export function LessonPracticePage() {
     void saveAttempt({
       profileId: activeProfile.id, language: lesson.language, layout: lesson.layout,
       courseId: lesson.courseId, lessonId: lesson.id, kind: "lesson", dateTime: new Date().toISOString(),
-      durationSec: Math.round(snapshot.elapsedMs / 1000), totalKeystrokes: snapshot.totalKeystrokes,
+      durationSec: snapshot.elapsedMs / 1000, totalKeystrokes: snapshot.totalKeystrokes,
       correctKeystrokes: snapshot.totalKeystrokes - (snapshot.incorrectKeystrokes ?? snapshot.uncorrectedErrors),
       incorrectKeystrokes: snapshot.incorrectKeystrokes ?? snapshot.uncorrectedErrors,
       correctedErrors: snapshot.correctedErrors, uncorrectedErrors: snapshot.uncorrectedErrors, backspaces: snapshot.backspaces,

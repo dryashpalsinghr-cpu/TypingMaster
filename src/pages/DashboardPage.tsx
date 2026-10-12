@@ -6,6 +6,7 @@ import { useProfileContext } from "../contexts/ProfileContext";
 import { useThemeContext } from "../contexts/ThemeContext";
 import { useT } from "../hooks/useTranslation";
 import { getDashboardStats, getLanguageProgress, type DashboardStats, type LanguageProgress } from "../services/statsService";
+import { formatPracticeTime } from "../services/practiceTime";
 import { getContinueLesson } from "../data/lessons";
 
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
@@ -73,9 +74,16 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (!activeProfile?.id) return;
-    void getDashboardStats(activeProfile.id).then(setStats);
-    void getLanguageProgress(activeProfile.id, "en").then(setEnProgress);
-    void getLanguageProgress(activeProfile.id, "hi").then(setHiProgress);
+    let cancelled = false;
+    const refresh = () => {
+      void getDashboardStats(activeProfile.id!).then((value) => { if (!cancelled) setStats(value); });
+      void getLanguageProgress(activeProfile.id!, "en").then((value) => { if (!cancelled) setEnProgress(value); });
+      void getLanguageProgress(activeProfile.id!, "hi").then((value) => { if (!cancelled) setHiProgress(value); });
+    };
+    setStats(null); refresh();
+    const interval = window.setInterval(refresh, 30_000);
+    window.addEventListener("focus", refresh);
+    return () => { cancelled = true; window.clearInterval(interval); window.removeEventListener("focus", refresh); };
   }, [activeProfile?.id]);
 
   if (!activeProfile) return null;
@@ -112,7 +120,8 @@ export function DashboardPage() {
         <StatCard label={t("dash_avg_accuracy")} value={`${stats?.avgAccuracy ?? 0}%`} />
         <StatCard label={t("dash_best_wpm")} value={stats?.bestWpm ?? 0} />
         <StatCard label={t("dash_lessons_done")} value={stats?.lessonsCompleted ?? 0} />
-        <StatCard label={t("dash_practiced_today")} value={`${stats?.minutesTodayPracticed ?? 0} min`} />
+        <StatCard label={t("dash_practiced_today")} value={formatPracticeTime(stats?.secondsTodayPracticed ?? 0)} />
+        <StatCard label={interfaceLanguage === "hi" ? "अब तक कुल अभ्यास" : "Total practice time"} value={formatPracticeTime(stats?.secondsTotalPracticed ?? 0)} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

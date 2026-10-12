@@ -20,3 +20,15 @@
 
 ## [0.4.0] - Phase 4: Kruti Dev 010 & Remington GAIL
 - Legacy font-based encodings, encoding adapters, Font Setup, Mapping Validator, Beta converter, verified-only lessons, Dexie v3 migration.
+
+## 2026-10-13 — Key guidance, timers, lessons and practice totals
+
+- Draw the dotted finger guide to the centre of the required key; show that key in blue in both keyboard styles and themes.
+- Start exam and typing-test countdowns on first text input. Ignore pre-start focus losses, and do not save empty tests.
+- Show today's practice and lifetime practice in hours/minutes/seconds, including exam results. Split saved sessions at local midnight and refresh the dashboard after focus changes and every 30 seconds.
+- Save unfinished typing tests when navigating away; preserve exam time/results when leaving a started exam. Keep lesson partial durations precise, cap them at the lesson deadline, and isolate lesson sessions when changing lessons.
+- Retain the existing beginner lesson IDs. Add eight English lessons (four speed, two numbers, two special marks) and two Kruti Dev Hindi speed lessons. These are original exercises following the categories described in the official TypingMaster manual: https://www.typingmaster.com/typing-tutor/support/user-manual.html
+- Correct the E-key lesson's finger instruction and selection after deleting an exam template.
+- Use Node 24 for the Windows workflow, run frontend tests/build before packaging, and fail artifact upload if no installer exists.
+
+Validation: production build, TypeScript, existing regression tests, nine practice-time regression checks, new curriculum keyboard-reachability checks, and lint (warnings only). Browser interaction testing was unavailable because Chromium could not be downloaded in this environment. Windows installer execution remains a manual check. Existing font and bundle-size build warnings remain.

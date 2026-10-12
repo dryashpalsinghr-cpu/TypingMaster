@@ -45,6 +45,7 @@ export function ExamPage() {
   useEffect(() => {
     if (phase !== "running") return;
     const addLoss = () => {
+      if (examStartRef.current === null) return;
       const now = Date.now();
       if (now - lastFocusLossAtRef.current < 500) return;
       lastFocusLossAtRef.current = now; focusLossRef.current += 1; setFocusLoss(focusLossRef.current);
@@ -55,6 +56,7 @@ export function ExamPage() {
   }, [phase]);
   const finish = useCallback(() => {
     if (finishingRef.current) return;
+    if (examStartRef.current === null) { setPhase("setup"); return; }
     finishingRef.current = true;
     if (timerRef.current) window.clearInterval(timerRef.current);
     if (!selected || !activeProfile?.id) { finishingRef.current = false; setPhase("setup"); return; }
@@ -77,13 +79,22 @@ export function ExamPage() {
       window.alert("Could not save this exam result. Please export a backup and check device storage.");
     });
   }, [selected, activeProfile]);
+  // Preserve time and the result when leaving an exam after typing has begun.
+  useEffect(() => {
+    if (phase !== "running") return;
+    return () => { if (!finishingRef.current && examStartRef.current !== null) finish(); };
+  }, [phase, finish]);
   const start = () => {
     if (!selected || unsupported.length) return;
     typedRef.current = ""; focusLossRef.current = 0; keyDepressionsRef.current = 0;
     remainingRef.current = selected.durationSeconds; lastFocusLossAtRef.current = 0; finishingRef.current = false;
     setTyped(""); setFocusLoss(0); setKeyDepressions(0); setResult(null);
-    setRemaining(selected.durationSeconds); setPhase("running"); examStartRef.current = performance.now();
+    setRemaining(selected.durationSeconds); setPhase("running"); examStartRef.current = null;
     if (timerRef.current) window.clearInterval(timerRef.current);
+  };
+  const beginTyping = () => {
+    if (!selected || examStartRef.current !== null) return;
+    examStartRef.current = performance.now();
     timerRef.current = window.setInterval(() => {
       const elapsed = (performance.now() - examStartRef.current!) / 1000;
       const next = Math.max(0, Math.ceil(selected.durationSeconds - elapsed));
@@ -96,6 +107,7 @@ export function ExamPage() {
     if (finishingRef.current) return;
     // No-correction mode permits only appending, never replacing old text.
     if (selected && !selected.allowBackspace && !value.startsWith(typedRef.current)) return;
+    if (value.length > 0) beginTyping();
     typedRef.current = value; setTyped(value);
   };
   const blank = (): ExamTemplate => {
@@ -104,7 +116,7 @@ export function ExamPage() {
   };
   const duplicate = (t: ExamTemplate) => setEditor({ ...t, id: undefined, name: `${t.name} (Copy)`, category: "custom", isBuiltIn: false });
   const saveEditor = async () => { if (!editor) return; await saveTemplate(editor); setEditor(null); await load(); };
-  const removeTemplate = async (id: number) => { await deleteTemplate(id); await load(); setSelectedId(null); };
+  const removeTemplate = async (id: number) => { await deleteTemplate(id); await load(); };
   if (phase === "running" && selected) {
     const overLimit = selected.focusLossLimit > 0 && focusLoss > selected.focusLossLimit;
     return <div className="space-y-4 p-6">
@@ -112,6 +124,7 @@ export function ExamPage() {
       {focusLoss > 0 && <div className={`flex items-center gap-2 rounded-lg border p-3 text-sm ${overLimit ? "border-red-400 bg-red-50 text-red-700" : "border-amber-300 bg-amber-50 text-amber-800"}`}><AlertTriangle size={16} />You left the test window {focusLoss} time(s). Allowed: {selected.focusLossLimit}.</div>}
       {isKruti && <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900"><div className="font-devanagari text-xl leading-loose">{selected.passage}</div><details className="mt-3"><summary className="cursor-pointer text-xs text-slate-400">Kruti Dev key-codes</summary><div className="mt-2 font-krutidev text-lg leading-relaxed">{targetText}</div></details></div>}
       {!isKruti && <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-lg leading-relaxed dark:border-slate-800 dark:bg-slate-900">{targetText}</div>}
+      <p className="text-sm text-slate-500">Timer starts when you type the first character.</p>
       <textarea autoFocus value={typed} onChange={(e) => changeTyped(e.target.value)} onKeyDown={(e) => {
         if (finishingRef.current) { e.preventDefault(); return; }
         if (!selected.allowBackspace && (e.key === "Backspace" || e.key === "Delete")) { e.preventDefault(); return; }

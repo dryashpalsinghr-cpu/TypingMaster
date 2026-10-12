@@ -143,8 +143,8 @@ const SPECS: Spec[] = [
   {
     title: "Keys E and I",
     titleHi: "E और I keys",
-    description: "Reach up with the index finger for E and the middle finger for I.",
-    descriptionHi: "पहली उंगली (Index) और बीच वाली उंगली (Middle) से ऊपर की लाइन की E और I keys का अभ्यास।",
+    description: "Reach up with the left middle finger for E and the right middle finger for I.",
+    descriptionHi: "बाएँ और दाएँ हाथ की बीच वाली उंगलियों से ऊपर की लाइन की E और I keys का अभ्यास।",
     newKeys: ["e", "i"],
     words: "see sea seal seals sell sells self sale sales side sides slide slides life lies lied file files fail fails field fields feel feels fell feed feeds deed deeds idea ideas ideal said safe sake sakes lake lakes leak leaks lead leads leaf lease kid kids elk elks desk desks disk disks dies skill skills skid skies slid silk sill silks jade jail fill fills fiddle fiddles saddle idle ill ail ails aid aids ale ales eel eels else led lid lids lie sled sleds sleek fled flies flee flees deal deals dale dales deaf dead sail sails fake fakes kiss",
     sentences: ["a kid feels safe", "see a lake as a kid sees a field", "dad sells silk files", "a lass is sad as a kid falls", "a lad feels ill as dad sells silks", "a kid slides a disk aside", "all ideas feel ideal", "a lad said a deed is safe", "elks feed as kids see a lake", "a kid feeds a sad elk"],

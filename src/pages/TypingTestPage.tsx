@@ -55,11 +55,31 @@ export function TypingTestPage() {
   const [usedMs, setUsedMs] = useState(0);
   const [finalMetrics, setFinalMetrics] = useState<ReturnType<typeof calculateMetrics> | null>(null);
   const [savedOnce, setSavedOnce] = useState(false);
+  const finalizedRef = useRef(false);
   const durationMsRef = useRef(0);
   const testStartRef = useRef<number | null>(null);
   const timerRef = useRef<number | null>(null);
   const snapshotRef = useRef(snapshot);
   useEffect(() => { snapshotRef.current = snapshot; }, [snapshot]);
+  const sessionRef = useRef({ profileId: activeProfile?.id, testLanguage, layoutId, textId: selectedText?.id });
+  sessionRef.current = { profileId: activeProfile?.id, testLanguage, layoutId, textId: selectedText?.id };
+  useEffect(() => () => {
+    const s = snapshotRef.current;
+    const session = sessionRef.current;
+    if (finalizedRef.current || testStartRef.current === null || !session.profileId || s.totalKeystrokes === 0) return;
+    finalizedRef.current = true;
+    const elapsedMs = Math.min(durationMsRef.current, performance.now() - testStartRef.current);
+    const m = calculateMetrics({ ...s, elapsedMs }, { includeKdph: true });
+    void saveAttempt({
+      profileId: session.profileId, language: session.testLanguage, layout: session.layoutId,
+      testId: session.textId, kind: "test", dateTime: new Date().toISOString(), durationSec: elapsedMs / 1000,
+      totalKeystrokes: s.totalKeystrokes, correctKeystrokes: s.totalKeystrokes - (s.incorrectKeystrokes ?? s.uncorrectedErrors),
+      incorrectKeystrokes: s.incorrectKeystrokes ?? s.uncorrectedErrors, correctedErrors: s.correctedErrors,
+      uncorrectedErrors: s.uncorrectedErrors, backspaces: s.backspaces,
+      grossWpm: m.grossWpm, netWpm: m.netWpm, accuracy: m.accuracy,
+      keyStats: {}, bigramStats: {}, completed: false, passed: false,
+    });
+  }, []);
   const passageBoxRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const box = passageBoxRef.current;
@@ -74,6 +94,9 @@ export function TypingTestPage() {
   const activeKeyDef = layout && nextNeededChar ? findKeyForOutput(layout, nextNeededChar) : null;
   const shiftRequired = layout && nextNeededChar ? outputRequiresShift(layout, nextNeededChar) : false;
   const finishTest = useCallback((usedMs: number) => {
+    if (finalizedRef.current) return;
+    if (testStartRef.current === null) { setPhase("setup"); return; }
+    finalizedRef.current = true;
     if (timerRef.current) window.clearInterval(timerRef.current);
     pauseClock();
     const actualUsedMs = Math.max(1000, Math.min(durationMsRef.current, testStartRef.current === null ? usedMs : performance.now() - testStartRef.current));
@@ -84,16 +107,17 @@ export function TypingTestPage() {
   }, [pauseClock]);
   const startTest = () => {
     if (!selectedText) return;
+    testStartRef.current = null; finalizedRef.current = false;
     restart(); setFinishedEarly(false); setFinalMetrics(null); setSavedOnce(false);
     durationMsRef.current = durationMin * 60_000;
     setRemainingMs(durationMsRef.current); setPhase("running");
   };
   useEffect(() => {
     if (phase !== "running") return;
-    const start = performance.now(); testStartRef.current = start;
     const total = durationMsRef.current;
     timerRef.current = window.setInterval(() => {
-      const elapsed = performance.now() - start;
+      if (testStartRef.current === null) return;
+      const elapsed = performance.now() - testStartRef.current;
       const left = Math.max(0, total - elapsed);
       setRemainingMs(left);
       if (left <= 0) finishTest(total);
@@ -115,6 +139,7 @@ export function TypingTestPage() {
     const resolved = resolveKeyOutput(layout, e.code, e.shiftKey, e.getModifierState("CapsLock"));
     if (resolved === null) return;
     e.preventDefault();
+    testStartRef.current ??= performance.now();
     const expectedNext = snapshot.characters[snapshot.cursor]?.expected[snapshot.characters[snapshot.cursor].typedBuffer.length];
     setPressedCode(e.code); setPressedCorrect(resolved === expectedNext); typeCharacter(resolved);
   }, [phase, layout, backspace, typeCharacter, snapshot]);

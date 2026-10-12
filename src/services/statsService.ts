@@ -1,3 +1,5 @@
+import { examDb } from "../db/examDb";
+import { practiceSecondsToday, validPracticeSeconds } from "./practiceTime";
 import { db } from "../db/database";
 import { summarizeAttempts } from "./progressSummary";
 import type { AttemptResult, TypingLanguage } from "../types";
@@ -9,6 +11,8 @@ export interface DashboardStats {
   bestWpm: number;
   lessonsCompleted: number;
   minutesTodayPracticed: number;
+  secondsTodayPracticed: number;
+  secondsTotalPracticed: number;
   streakDays: number;
   weakKeys: string[];
   recentAttempt: AttemptResult | null;
@@ -28,39 +32,28 @@ function toDateKey(iso: string): string {
 export async function getDashboardStats(profileId: number): Promise<DashboardStats> {
   const attempts = await db.attempts.where("profileId").equals(profileId).sortBy("dateTime");
 
-  if (attempts.length === 0) {
-    return {
-      avgWpm: 0,
-      avgAccuracy: 0,
-      bestWpm: 0,
-      lessonsCompleted: 0,
-      minutesTodayPracticed: 0,
-      streakDays: 0,
-      weakKeys: [],
-      recentAttempt: null,
-      weeklyWpm: [],
-      weeklyAccuracy: [],
-    };
-  }
+  const exams = await examDb.examResults.where("profileId").equals(profileId).toArray();
+  const sessions = [
+    ...attempts.map((a) => ({ end: Date.parse(a.dateTime), seconds: a.totalKeystrokes > 0 ? a.durationSec : 0 })),
+    ...exams.map((a) => ({ end: a.takenAt, seconds: a.keyDepressions > 0 ? a.durationSeconds : 0 })),
+  ];
+  const now = new Date();
+  const secondsTodayPracticed = sessions.reduce((sum, s) => sum + practiceSecondsToday(s.end, s.seconds, now), 0);
+  const secondsTotalPracticed = sessions.reduce((sum, s) => sum + validPracticeSeconds(s.seconds), 0);
 
-  const avgWpm = Math.round(attempts.reduce((s, a) => s + a.netWpm, 0) / attempts.length);
-  const avgAccuracy = Math.round(attempts.reduce((s, a) => s + a.accuracy, 0) / attempts.length);
-  const bestWpm = Math.round(Math.max(...attempts.map((a) => a.netWpm)));
+  const avgWpm = attempts.length ? Math.round(attempts.reduce((s, a) => s + a.netWpm, 0) / attempts.length) : 0;
+  const avgAccuracy = attempts.length ? Math.round(attempts.reduce((s, a) => s + a.accuracy, 0) / attempts.length) : 0;
+  const bestWpm = Math.round(Math.max(0, ...attempts.map((a) => a.netWpm)));
   const lessonsCompleted = new Set(
     attempts
       .filter((a) => a.kind === "lesson" && a.completed && a.passed && a.lessonId)
       .map((a) => a.lessonId),
   ).size;
 
-  const todayKey = toDateKey(new Date().toISOString());
-  // 1 decimal (4.5 min): pehle Math.round se 30 sec se kam practice 0 min dikhti thi.
-  const minutesTodayPracticed =
-    Math.round(
-      (attempts.filter((a) => toDateKey(a.dateTime) === todayKey).reduce((s, a) => s + a.durationSec, 0) / 60) * 10
-    ) / 10;
+  const minutesTodayPracticed = Math.round(secondsTodayPracticed / 6) / 10;
 
   // Practice streak: count consecutive days (including today) with at least one attempt.
-  const daySet = new Set(attempts.map((a) => toDateKey(a.dateTime)));
+  const daySet = new Set(sessions.filter((s) => s.seconds > 0).map((s) => toDateKey(new Date(s.end).toISOString())));
   let streakDays = 0;
   const cursor = new Date();
   // Aaj abhi practice nahi ki to streak toota nahi hai - kal se ginti shuru karo
@@ -109,9 +102,11 @@ export async function getDashboardStats(profileId: number): Promise<DashboardSta
     bestWpm,
     lessonsCompleted,
     minutesTodayPracticed,
+    secondsTodayPracticed,
+    secondsTotalPracticed,
     streakDays,
     weakKeys,
-    recentAttempt: attempts[attempts.length - 1],
+    recentAttempt: attempts[attempts.length - 1] ?? null,
     weeklyWpm,
     weeklyAccuracy,
   };

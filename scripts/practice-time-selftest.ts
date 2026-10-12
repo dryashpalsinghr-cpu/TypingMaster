@@ -1,0 +1,14 @@
+import assert from "node:assert/strict";
+import { practiceSecondsToday, formatPracticeTime, validPracticeSeconds } from "../src/services/practiceTime.ts";
+const now = new Date(2026, 9, 13, 1, 0, 0);
+const end = new Date(2026, 9, 13, 0, 2, 0).getTime();
+assert.equal(practiceSecondsToday(end, 300, now), 120, "midnight session only counts today's portion");
+assert.equal(practiceSecondsToday(new Date(2026, 9, 12, 23, 50).getTime(), 60, now), 0);
+assert.equal(practiceSecondsToday(now.getTime(), 0.5, now), 0.5, "sub-second duration retained");
+assert.equal(practiceSecondsToday(NaN, 30, now), 0);
+assert.equal(validPracticeSeconds(-1), 0);
+assert.equal(validPracticeSeconds(Infinity), 0);
+assert.equal(formatPracticeTime(29), "0 min 29 sec");
+assert.equal(formatPracticeTime(3661), "1 h 1 min 1 sec");
+assert.equal(formatPracticeTime(0), "0 min 0 sec");
+console.log("9 practice time regression checks passed.");
