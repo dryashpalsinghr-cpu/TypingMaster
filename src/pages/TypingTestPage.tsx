@@ -1,3 +1,4 @@
+import { useSearchParams } from "react-router-dom";
 import { unreachableCharacters } from "../keyboards/unreachable";
 import { useKrutiFont } from "../hooks/useKrutiFont";
 import { isTypingControl, shouldIgnorePracticeKey } from "../services/typingFocus";
@@ -35,7 +36,8 @@ export function TypingTestPage() {
   const [hindiLayout, setHindiLayout] = useState<"unicode-inscript" | "kruti-dev-010">("kruti-dev-010");
   const availableTexts = useMemo(() => getTestTextsForLanguage(testLanguage), [testLanguage]);
   const [textId, setTextId] = useState<string>(availableTexts[0]?.id ?? "");
-  const [durationMin, setDurationMin] = useState<number>(5);
+  const [searchParams] = useSearchParams();
+  const [durationMin, setDurationMin] = useState<number>(() => searchParams.get("duration") === "1" ? 1 : 5);
   const [targetWpm, setTargetWpm] = useState<string>("");
   const [targetAccuracy, setTargetAccuracy] = useState<string>("");
   useEffect(() => {

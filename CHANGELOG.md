@@ -1,5 +1,12 @@
 # Changelog
 
+## Dashboard audit — 2026-10-13
+- The 1-Min Test shortcut now opens a one-minute setup.
+- Dashboard and language speed/accuracy include saved exams and exclude empty attempts.
+- Weekly charts show the latest seven local calendar days, including days without practice.
+- Dashboard refreshes update all cards together, ignore stale requests, and show a retryable storage error.
+- Regression fixtures verify exam-only profiles, mixed practice, empty attempts and profile isolation.
+
 ## Desktop functional audit — 2026-10-13
 - Keep game input separate from focused controls and dialogs; focus the playfield when starting.
 - Resolve game/review physical keys independently of the OS language; keep English game analytics labelled English.

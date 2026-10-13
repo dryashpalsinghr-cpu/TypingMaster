@@ -67,6 +67,8 @@ export function DashboardPage() {
   const { activeProfile } = useProfileContext();
   const { interfaceLanguage } = useThemeContext();
   const t = useT();
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reload, setReload] = useState(0);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [enProgress, setEnProgress] = useState<LanguageProgress | null>(null);
   const [hiProgress, setHiProgress] = useState<LanguageProgress | null>(null);
@@ -75,16 +77,22 @@ export function DashboardPage() {
   useEffect(() => {
     if (!activeProfile?.id) return;
     let cancelled = false;
+    let request = 0;
     const refresh = () => {
-      void getDashboardStats(activeProfile.id!).then((value) => { if (!cancelled) setStats(value); });
-      void getLanguageProgress(activeProfile.id!, "en").then((value) => { if (!cancelled) setEnProgress(value); });
-      void getLanguageProgress(activeProfile.id!, "hi").then((value) => { if (!cancelled) setHiProgress(value); });
+      const current = ++request;
+      void Promise.all([getDashboardStats(activeProfile.id!), getLanguageProgress(activeProfile.id!, "en"), getLanguageProgress(activeProfile.id!, "hi")])
+        .then(([value, en, hi]) => {
+          if (cancelled || current !== request) return;
+          setStats(value); setEnProgress(en); setHiProgress(hi); setLoadError(null);
+        }).catch(() => {
+          if (!cancelled && current === request) setLoadError("Dashboard data could not be refreshed. Check device storage and retry.");
+        });
     };
-    setStats(null); refresh();
+    setStats(null); setEnProgress(null); setHiProgress(null); setLoadError(null); refresh();
     const interval = window.setInterval(refresh, 30_000);
     window.addEventListener("focus", refresh);
     return () => { cancelled = true; window.clearInterval(interval); window.removeEventListener("focus", refresh); };
-  }, [activeProfile?.id]);
+  }, [activeProfile?.id, reload]);
 
   if (!activeProfile) return null;
 
@@ -95,6 +103,8 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6 p-6">
+      {loadError && <div role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{loadError} <button onClick={() => setReload((n) => n + 1)} className="ml-2 underline">Retry</button></div>}
+      {!stats && !loadError && <p role="status">Loading dashboard…</p>}
       <div>
         <h1 className="text-xl font-bold">
           {t("dash_welcome")}, {activeProfile.displayName} 👋
@@ -172,7 +182,7 @@ export function DashboardPage() {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <QuickAction icon={Play} label={t("dash_start_lesson")} onClick={() => navigate(`/practice/${continueLesson.id}`)} />
-        <QuickAction icon={Timer} label={t("dash_one_min_test")} onClick={() => navigate("/test")} />
+        <QuickAction icon={Timer} label={t("dash_one_min_test")} onClick={() => navigate("/test?duration=1")} />
         <QuickAction icon={GraduationCap} label={t("dash_exam_test")} onClick={() => navigate("/exam")} />
         <QuickAction icon={Target} label={t("dash_weak_keys")} onClick={() => navigate("/review")} />
         <QuickAction icon={Keyboard} label={t("dash_keyboard_chart")} onClick={() => navigate("/keyboard-chart")} />

@@ -41,9 +41,13 @@ export async function getDashboardStats(profileId: number): Promise<DashboardSta
   const secondsTodayPracticed = sessions.reduce((sum, s) => sum + practiceSecondsToday(s.end, s.seconds, now), 0);
   const secondsTotalPracticed = sessions.reduce((sum, s) => sum + validPracticeSeconds(s.seconds), 0);
 
-  const avgWpm = attempts.length ? Math.round(attempts.reduce((s, a) => s + a.netWpm, 0) / attempts.length) : 0;
-  const avgAccuracy = attempts.length ? Math.round(attempts.reduce((s, a) => s + a.accuracy, 0) / attempts.length) : 0;
-  const bestWpm = Math.round(Math.max(0, ...attempts.map((a) => a.netWpm)));
+  const measured = [
+    ...attempts.filter((a) => a.totalKeystrokes > 0).map((a) => ({ netWpm: a.netWpm, accuracy: a.accuracy, dateTime: a.dateTime })),
+    ...exams.filter((a) => a.keyDepressions > 0).map((a) => ({ netWpm: a.netWpm, accuracy: a.accuracy, dateTime: new Date(a.takenAt).toISOString() })),
+  ];
+  const avgWpm = measured.length ? Math.round(measured.reduce((s, a) => s + a.netWpm, 0) / measured.length) : 0;
+  const avgAccuracy = measured.length ? Math.round(measured.reduce((s, a) => s + a.accuracy, 0) / measured.length) : 0;
+  const bestWpm = Math.round(Math.max(0, ...measured.map((a) => a.netWpm)));
   const lessonsCompleted = new Set(
     attempts
       .filter((a) => a.kind === "lesson" && a.completed && a.passed && a.lessonId)
@@ -84,15 +88,19 @@ export async function getDashboardStats(profileId: number): Promise<DashboardSta
     .slice(0, 6)
     .map(([key]) => key);
 
-  // Last 7 practice DAYS (one point per day = average of that day's attempts).
+  // Last seven local calendar days, including exams and days without practice.
   const perDay = new Map<string, { wpm: number; acc: number; n: number }>();
-  for (const a of attempts) {
+  for (const a of measured) {
     const k = toDateKey(a.dateTime);
     const d = perDay.get(k) ?? { wpm: 0, acc: 0, n: 0 };
     d.wpm += a.netWpm; d.acc += a.accuracy; d.n += 1;
     perDay.set(k, d);
   }
-  const last7 = [...perDay.entries()].sort((x, y) => (x[0] < y[0] ? -1 : 1)).slice(-7);
+  const last7 = Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(now); day.setDate(day.getDate() - (6 - i));
+    const date = toDateKey(day.toISOString());
+    return [date, perDay.get(date) ?? { wpm: 0, acc: 0, n: 1 }] as const;
+  });
   const weeklyWpm = last7.map(([date, d]) => ({ date, wpm: Math.round(d.wpm / d.n) }));
   const weeklyAccuracy = last7.map(([date, d]) => ({ date, accuracy: Math.round(d.acc / d.n) }));
 
@@ -131,14 +139,17 @@ export async function getLanguageProgress(profileId: number, language: TypingLan
   // Speed/accuracy count every attempt in this language (Kruti Dev, InScript ...);
   // the lesson tick-count only counts lessons of the course shown on the dashboard.
   const lessonAttempts = attempts.filter((a) => a.kind === "lesson" && a.completed && a.layout === layout);
-  const completedLessonIds = new Set(lessonAttempts.filter((a) => a.passed).map((a) => a.lessonId));
+  const curriculum = new Set(getLessonsForLayout(layout).map((lesson) => lesson.id));
+  const completedLessonIds = new Set(lessonAttempts.filter((a) => a.passed && a.lessonId && curriculum.has(a.lessonId)).map((a) => a.lessonId));
+  const exams = await examDb.examResults.where("profileId").equals(profileId).filter((a) => a.language === language && a.keyDepressions > 0).toArray();
+  const measured = [...attempts.filter((a) => a.totalKeystrokes > 0), ...exams];
 
   return {
     language,
     lessonsCompleted: completedLessonIds.size,
     totalLessons: getLessonsForLayout(layout).length,
-    avgWpm: attempts.length ? Math.round(attempts.reduce((s, a) => s + a.netWpm, 0) / attempts.length) : 0,
-    avgAccuracy: attempts.length ? Math.round(attempts.reduce((s, a) => s + a.accuracy, 0) / attempts.length) : 0,
+    avgWpm: measured.length ? Math.round(measured.reduce((s, a) => s + a.netWpm, 0) / measured.length) : 0,
+    avgAccuracy: measured.length ? Math.round(measured.reduce((s, a) => s + a.accuracy, 0) / measured.length) : 0,
   };
 }
 
