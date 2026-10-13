@@ -42,7 +42,7 @@ export function AppSidebar() {
             )}
           </NavLink>
         ))}
-        <NavLink to="/backup" className="pp-nav-item flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium">Backup &amp; Restore</NavLink>
+        <NavLink to="/backup" className={({ isActive }) => clsx("pp-nav-item flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium", isActive && "pp-nav-item--active")}>Backup &amp; Restore</NavLink>
       </nav>
       <div className="pp-sidebar-card mt-3 flex items-center gap-2 p-3">
         <Trophy size={22} className="shrink-0 text-yellow-300" />

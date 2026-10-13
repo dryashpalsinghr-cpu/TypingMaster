@@ -1,5 +1,12 @@
 # Changelog
 
+## UI follow-up — 2026-10-13
+- Wrap long profile names and layout badges within narrow headers.
+- Keep keyboard reference keys readable in a keyboard-accessible horizontal scroll region.
+- Reset the content scroll position when changing pages.
+- Highlight Backup & Restore in navigation and match the mobile Menu button to dark mode.
+- Verified with Chromium at 320, 390, 800 and 1366px widths; existing regression suites and production build pass.
+
 ## [0.7.0] - Phase 7: Original Typing Games
 ### Added
 - Games hub (/games) with three original games and per-profile high scores.

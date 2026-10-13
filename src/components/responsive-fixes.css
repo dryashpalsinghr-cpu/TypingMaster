@@ -4,6 +4,7 @@
 .app-shell :focus-visible { outline: 3px solid #1677e8; outline-offset: 3px; }
 @media (max-width: 767px) {
   .mobile-menu-toggle { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 8px 16px; background: white; color: #0f2a52; border-bottom: 1px solid #cbd5e1; }
+  .dark .mobile-menu-toggle { background: #0f172a; color: #e2e8f0; border-color: #334155; }
   .app-shell .pp-header { padding-left: 16px; padding-right: 16px; }
   .app-shell .pp-sidebar { display: none; }
   .app-shell[data-nav-open="true"] .pp-sidebar { display: flex; position: fixed; top: 0; bottom: 0; left: 0; width: min(280px, 85vw); z-index: 60; }

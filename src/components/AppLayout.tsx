@@ -10,6 +10,10 @@ export function AppLayout() {
   const [navOpen, setNavOpen] = useState(false);
   const menuRef = useRef<HTMLButtonElement>(null);
   const location = useLocation();
+  const mainRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (mainRef.current) { mainRef.current.scrollTop = 0; mainRef.current.scrollLeft = 0; }
+  }, [location.pathname]);
   useEffect(() => setNavOpen(false), [location.pathname]);
   useEffect(() => {
     if (!navOpen) return;
@@ -42,7 +46,7 @@ export function AppLayout() {
     <div className="flex min-w-0 flex-1 flex-col">
       <button ref={menuRef} className="mobile-menu-toggle" aria-label={navOpen ? "Close navigation" : "Open navigation"} aria-expanded={navOpen} aria-controls="app-navigation" onClick={() => setNavOpen((v) => !v)}>Menu</button>
       <AppHeader />
-      <main className="min-h-0 flex-1 overflow-y-auto"><Outlet /></main>
+      <main ref={mainRef} className="min-h-0 flex-1 overflow-y-auto"><Outlet /></main>
     </div>
   </div>;
 }

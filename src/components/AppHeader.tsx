@@ -35,9 +35,9 @@ export function AppHeader() {
   const currentLayout = activeProfile ? getKeyboardLayout(effectiveLayout) : null;
   return (
     <header className="pp-header flex h-16 flex-wrap items-center justify-between gap-2 px-6">
-      <div className="flex items-center gap-3">
-        {activeProfile && (<div className="grid h-8 w-8 place-items-center rounded-full text-sm font-semibold text-white shadow-sm" style={{ backgroundColor: activeProfile.avatarColor }}>{activeProfile.displayName.slice(0, 1).toUpperCase()}</div>)}
-        <span className="text-sm font-semibold text-[#0f2a52] dark:text-slate-100">{activeProfile?.displayName ?? "Guest"}</span>
+      <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3">
+        {activeProfile && (<div className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-sm font-semibold text-white shadow-sm" style={{ backgroundColor: activeProfile.avatarColor }}>{activeProfile.displayName.slice(0, 1).toUpperCase()}</div>)}
+        <span className="min-w-0 break-all text-sm font-semibold text-[#0f2a52] dark:text-slate-100">{activeProfile?.displayName ?? "Guest"}</span>
         <span className="rounded-full bg-[#1677e8]/10 px-2 py-0.5 text-xs font-medium text-[#0a5bc4] dark:bg-brand-900/30 dark:text-brand-300 font-devanagari">{currentLayout ? (interfaceLanguage === "hi" ? currentLayout.labelHi : currentLayout.label) : "-"}</span>
       </div>
       <div className="flex flex-wrap items-center gap-2">

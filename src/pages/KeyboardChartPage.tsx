@@ -58,6 +58,8 @@ export function KeyboardChartPage() {
         <div className="mb-3 text-sm font-medium font-devanagari">
           {interfaceLanguage === "hi" ? layout.labelHi : layout.label}
         </div>
+        <div className="overflow-x-auto pb-2" tabIndex={0} role="region" aria-label="Keyboard chart — scroll horizontally to see all keys">
+        <div className="min-w-[680px]">
         <VirtualKeyboard
           rows={rows}
           activeCode={null}
@@ -70,6 +72,8 @@ export function KeyboardChartPage() {
           krutiDev={isKruti}
           physicalHints={isHindi ? ENGLISH_HINTS : undefined}
         />
+        </div>
+        </div>
       </div>
 
       {isKruti && <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-900/20 dark:text-amber-200"><h2 className="font-semibold">Kruti Dev 010 chart</h2><p className="mt-1 font-devanagari">हर key में ऊपर Shift glyph/symbol और नीचे normal glyph/English key दिखती है—आपके reference chart की तरह।</p></div>}
