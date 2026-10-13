@@ -17,8 +17,10 @@ export async function getKeystrokes(profileId: number): Promise<KeystrokeRecord[
   return all.sort((a, b) => a.at - b.at);
 }
 export async function clearAnalytics(profileId: number): Promise<void> {
-  await analyticsDb.keystrokes.where("profileId").equals(profileId).delete();
-  await analyticsDb.reviewSessions.where("profileId").equals(profileId).delete();
+  await analyticsDb.transaction("rw", analyticsDb.keystrokes, analyticsDb.reviewSessions, async () => {
+    await analyticsDb.keystrokes.where("profileId").equals(profileId).delete();
+    await analyticsDb.reviewSessions.where("profileId").equals(profileId).delete();
+  });
 }
 
 function isTypable(ch: string): boolean { return !!ch && ch !== " " && ch !== "\n"; }
@@ -27,7 +29,7 @@ export function computeKeyStats(records: KeystrokeRecord[]): KeyStat[] {
   const map = new Map<string, { count: number; errors: number; total: number }>();
   for (const r of records) {
     if (!isTypable(r.expected)) continue;
-    const key = r.expected.toLowerCase();
+    const key = r.layoutId === "en-qwerty" ? r.expected.toLowerCase() : r.expected;
     const e = map.get(key) ?? { count: 0, errors: 0, total: 0 };
     e.count++; if (!r.correct) e.errors++; e.total += r.deltaMs;
     map.set(key, e);
@@ -39,8 +41,9 @@ export function computeBigramStats(records: KeystrokeRecord[]): BigramStat[] {
   for (let i = 1; i < records.length; i++) {
     const prev = records[i - 1]; const cur = records[i];
     if (!isTypable(prev.expected) || !isTypable(cur.expected)) continue;
-    if (cur.at - prev.at > 4000) continue;
-    const bigram = (prev.expected + cur.expected).toLowerCase();
+    if (cur.profileId !== prev.profileId || cur.layoutId !== prev.layoutId || cur.at < prev.at || cur.at - prev.at > 4000) continue;
+    const pair = prev.expected + cur.expected;
+    const bigram = cur.layoutId === "en-qwerty" ? pair.toLowerCase() : pair;
     const e = map.get(bigram) ?? { count: 0, errors: 0, total: 0 };
     e.count++; if (!cur.correct) e.errors++; e.total += cur.deltaMs;
     map.set(bigram, e);

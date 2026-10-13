@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Award, Printer, RefreshCw } from "lucide-react";
 import { useProfileContext } from "../contexts/ProfileContext";
 import { getResults } from "../services/examService";
@@ -9,20 +9,30 @@ export function CertificatesPage() {
   const [results, setResults] = useState<ExamResult[]>([]);
   const [certs, setCerts] = useState<CertificateRecord[]>([]);
   const [active, setActive] = useState<CertificateRecord | null>(null);
+  const generatingRef = useRef(false);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState(activeProfile?.displayName ?? "");
   const load = useCallback(async () => {
     if (!activeProfile?.id) return;
     setResults(await getResults(activeProfile.id));
     setCerts(await getCertificates(activeProfile.id));
   }, [activeProfile]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void load().catch(() => setError("Could not load certificates. Please retry.")); }, [load]);
   const passed = results.filter((r) => r.passed);
-  const generate = async (r: ExamResult) => { const c = await issueCertificate(r, name); await load(); setActive(c); };
+  const generate = async (r: ExamResult) => {
+    if (generatingRef.current) return;
+    generatingRef.current = true; setGenerating(true); setError(null);
+    try { const c = await issueCertificate(r, name); setActive(c); await load(); }
+    catch { setError("Could not generate or refresh the certificate. Check device storage and refresh before retrying."); }
+    finally { generatingRef.current = false; setGenerating(false); }
+  };
   return (
     <div className="space-y-6 p-6">
       <style>{"@media print { body * { visibility: hidden !important; } .cert-print, .cert-print * { visibility: visible !important; } .cert-print { position: fixed; inset: 0; margin: auto; height: fit-content; } .no-print { display: none !important; } }"}</style>
-      <div className="flex items-center gap-2 no-print"><Award size={22} /><h1 className="text-xl font-bold">Certificates</h1><button onClick={() => void load()} className="ml-auto flex items-center gap-1 rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700"><RefreshCw size={16} />Refresh</button></div>
+      <div className="flex items-center gap-2 no-print"><Award size={22} /><h1 className="text-xl font-bold">Certificates</h1><button onClick={() => { setError(null); void load().catch(() => setError("Could not load certificates. Please retry.")); }} className="ml-auto flex items-center gap-1 rounded-md border border-slate-300 px-3 py-2 text-sm dark:border-slate-700"><RefreshCw size={16} />Refresh</button></div>
       <p className="text-sm text-slate-500 dark:text-slate-400 no-print">Certificates are generated only from your real passed exam results. There is no sample or fabricated data. This is a practice certificate, not an official government document.</p>
+      {error && <p role="alert" className="no-print text-sm text-red-600">{error}</p>}
       <label className="no-print block text-sm">Name on certificate<input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full max-w-sm rounded-md border border-slate-300 px-2 py-1 dark:border-slate-700 dark:bg-slate-800" /></label>
       {active && (
         <div className="cert-print rounded-xl border-4 border-brand-600 bg-white p-10 text-center text-slate-900">
@@ -47,7 +57,7 @@ export function CertificatesPage() {
         {passed.map((r) => (
           <div key={r.id} className="flex items-center justify-between rounded-lg border border-slate-200 p-3 dark:border-slate-700">
             <div><div className="text-sm font-medium">{r.templateName}</div><div className="text-xs text-slate-500">{r.netWpm} WPM · {r.accuracy}% · {r.kdph} KDPH · {new Date(r.takenAt).toLocaleDateString()}</div></div>
-            <button onClick={() => void generate(r)} className="rounded-md bg-brand-600 px-3 py-1 text-xs text-white">Generate</button>
+            <button disabled={generating} onClick={() => void generate(r)} className="rounded-md bg-brand-600 px-3 py-1 text-xs text-white">Generate</button>
           </div>
         ))}
       </section>

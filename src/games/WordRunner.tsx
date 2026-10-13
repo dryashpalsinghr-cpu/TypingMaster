@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useKeyboardLayout } from "../hooks/useKeyboardLayout";
+import { useKrutiFont } from "../hooks/useKrutiFont";
+import { resolveKeyOutput } from "../keyboards/resolveInput";
 import { Play, RotateCcw, Timer } from "lucide-react";
 import { useProfileContext } from "../contexts/ProfileContext";
 import { randomWord } from "../data/gameWords";
@@ -7,9 +10,12 @@ import type { GameProps } from "../types/games";
 import type { KeystrokeRecord } from "../types/analytics";
 import { unicodeToKrutiDev } from "../converter/krutiDevCore";
 const DURATION = 60;
-export function WordRunner({ profileId, layoutId, onExit }: GameProps) {
+export function WordRunner({ profileId, onExit }: GameProps) {
   const { activeProfile } = useProfileContext();
-  const hindi = activeProfile?.preferredTypingLanguage === "hi";
+  const [hindi] = useState(activeProfile?.preferredTypingLanguage === "hi");
+  const layoutId = hindi ? "kruti-dev-010" : "en-qwerty";
+  const { layout, ready } = useKeyboardLayout(layoutId);
+  const fontReady = useKrutiFont(hindi);
   const [word, setWord] = useState("");
   const [displayWord, setDisplayWord] = useState("");
   const [typed, setTyped] = useState("");
@@ -30,7 +36,7 @@ export function WordRunner({ profileId, layoutId, onExit }: GameProps) {
     setDisplayWord(unicode);
     setWord(hindi ? unicodeToKrutiDev(unicode) : unicode);
   };
-  const start = () => { if (savingRef.current) return; playingRef.current = true; deadlineRef.current = performance.now() + DURATION * 1000; setError(null); setScore(0); scoreRef.current = 0; setRemaining(DURATION); setTyped(""); nextWord(); hitsRef.current = 0; triesRef.current = 0; capsRef.current = []; lastKeyRef.current = performance.now(); setOver(false); setRunning(true); };
+  const start = () => { if (savingRef.current || !ready || fontReady !== true) return; playingRef.current = true; deadlineRef.current = performance.now() + DURATION * 1000; setError(null); setScore(0); scoreRef.current = 0; setRemaining(DURATION); setTyped(""); nextWord(); hitsRef.current = 0; triesRef.current = 0; capsRef.current = []; lastKeyRef.current = performance.now(); setOver(false); setRunning(true); };
   const endGame = useCallback(async () => {
     if (!playingRef.current) return;
     playingRef.current = false; savingRef.current = true; setSaving(true);
@@ -69,15 +75,21 @@ export function WordRunner({ profileId, layoutId, onExit }: GameProps) {
   };
   return (
     <div className="space-y-3">
+      {hindi && fontReady === false && <p role="alert" className="text-amber-700">Install the Kruti Dev font in Font Setup before playing Hindi Word Runner.</p>}
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       <div className="flex items-center justify-between"><h2 className="text-lg font-bold">Word Runner</h2><div className="flex items-center gap-3 text-sm"><span>Score: <b>{score}</b></span><span className="flex items-center gap-1"><Timer size={16} />{remaining}s</span></div></div>
       <div className="grid min-h-[220px] place-items-center rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-        {!running && !over && <button onClick={start} className="flex items-center gap-2 rounded-md bg-brand-600 px-5 py-3 text-white"><Play size={18} />Start</button>}
-        {over && <div className="text-center"><p className="text-lg font-bold">Time up</p><p className="mt-1 text-sm text-slate-500">Score {score}</p><div className="mt-4 flex justify-center gap-2"><button onClick={start} disabled={saving} className="flex items-center gap-1 rounded-md bg-brand-600 px-4 py-2 text-sm text-white"><RotateCcw size={16} />Again</button><button onClick={onExit} className="rounded-md border border-slate-300 px-4 py-2 text-sm dark:border-slate-700">Exit</button></div></div>}
+        {!running && !over && <button disabled={saving || !ready || fontReady !== true} onClick={start} className="flex items-center gap-2 rounded-md bg-brand-600 px-5 py-3 text-white"><Play size={18} />Start</button>}
+        {over && <div className="text-center"><p className="text-lg font-bold">Time up</p><p className="mt-1 text-sm text-slate-500">Score {score}</p><div className="mt-4 flex justify-center gap-2"><button disabled={saving || !ready || fontReady !== true} onClick={start} className="flex items-center gap-1 rounded-md bg-brand-600 px-4 py-2 text-sm text-white"><RotateCcw size={16} />Again</button><button onClick={onExit} className="rounded-md border border-slate-300 px-4 py-2 text-sm dark:border-slate-700">Exit</button></div></div>}
         {running && (<div className="w-full max-w-md text-center">
           {hindi && <div className="mb-2 font-devanagari text-sm text-slate-500">{displayWord}</div>}
           <div className={`${hindi ? "font-krutidev" : "font-mono"} text-4xl font-bold tracking-wide`}>{word.split("").map((ch, i) => { const t = typed[i]; const cls = t == null ? "text-slate-400" : t === ch ? "text-green-600" : "text-red-600"; return <span key={i} className={cls}>{ch}</span>; })}</div>
-          <input autoFocus value={typed} onChange={(e) => onChange(e.target.value)} maxLength={word.length} onPaste={(e) => e.preventDefault()} onDrop={(e) => e.preventDefault()} className={`mt-4 w-full rounded-md border border-slate-300 p-3 text-center text-xl ${hindi ? "font-krutidev" : "font-mono"} dark:border-slate-700 dark:bg-slate-800`} placeholder="Type the word" />
+          <input onKeyDown={(e) => {
+            if (e.ctrlKey || e.metaKey || e.altKey || e.key === "Tab") return;
+            if (e.key === "Backspace") { e.preventDefault(); onChange(typed.slice(0, -1)); return; }
+            const output = resolveKeyOutput(layout, e.code, e.shiftKey, e.getModifierState("CapsLock"));
+            if (output && output !== "\n") { e.preventDefault(); onChange(typed + output); }
+          }} autoFocus value={typed} onChange={(e) => onChange(e.target.value)} maxLength={word.length} onPaste={(e) => e.preventDefault()} onDrop={(e) => e.preventDefault()} className={`mt-4 w-full rounded-md border border-slate-300 p-3 text-center text-xl ${hindi ? "font-krutidev" : "font-mono"} dark:border-slate-700 dark:bg-slate-800`} placeholder="Type the word" />
         </div>)}
       </div>
       <p className="text-xs text-slate-400">Type each word correctly before the 60-second clock runs out. {hindi ? "Hindi words use the Kruti Dev 010 keyboard and font." : ""}</p>

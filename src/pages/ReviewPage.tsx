@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useKeyboardLayout } from "../hooks/useKeyboardLayout";
+import { useKrutiFont } from "../hooks/useKrutiFont";
+import { resolveKeyOutput } from "../keyboards/resolveInput";
 import { Target, Play, RotateCcw } from "lucide-react";
 import { useProfileContext } from "../contexts/ProfileContext";
 import { getKeystrokes, getWeakKeys, getSlowKeys, getDifficultBigrams, buildDrill, recordKeystrokes, saveReviewSession } from "../services/analyticsService";
@@ -7,6 +10,11 @@ type Mode = "weak-keys" | "slow-keys" | "bigrams" | "warmup";
 const MODE_LABELS: Record<Mode, string> = { "weak-keys": "Weak keys", "slow-keys": "Slow keys", bigrams: "Difficult bigrams", warmup: "Home-row warmup" };
 export function ReviewPage() {
   const { activeProfile } = useProfileContext();
+  const [layoutId] = useState(activeProfile?.preferredLayout ?? "en-qwerty");
+  const { layout, ready } = useKeyboardLayout(layoutId);
+  const legacy = layoutId === "kruti-dev-010" || layoutId === "remington-gail";
+  const fontReady = useKrutiFont(legacy);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [records, setRecords] = useState<KeystrokeRecord[]>([]);
   const [mode, setMode] = useState<Mode>("weak-keys");
   const [drill, setDrill] = useState("");
@@ -25,16 +33,15 @@ export function ReviewPage() {
   const load = useCallback(async () => {
     if (!activeProfile?.id) { setHistoryLoading(false); return; }
     setHistoryLoading(true); setHistoryError(null);
-    try { setRecords(await getKeystrokes(activeProfile.id)); }
+    try { setRecords((await getKeystrokes(activeProfile.id)).filter((r) => r.layoutId === layoutId)); }
     catch { setHistoryError("Could not load review history. Check device storage and retry."); }
     finally { setHistoryLoading(false); }
-  }, [activeProfile?.id]);
+  }, [activeProfile?.id, layoutId]);
   useEffect(() => { void load(); }, [load]);
   const weak = useMemo(() => getWeakKeys(records), [records]);
   const slow = useMemo(() => getSlowKeys(records), [records]);
   const bigrams = useMemo(() => getDifficultBigrams(records), [records]);
   const hasData = records.length > 0;
-  const layoutId = activeProfile?.preferredLayout ?? "en-qwerty";
   const makeDrill = (m: Mode): string => {
     if (m === "weak-keys") return buildDrill(weak.map((k) => k.key), []);
     if (m === "slow-keys") return buildDrill(slow.map((k) => k.key), []);
@@ -42,12 +49,13 @@ export function ReviewPage() {
     return buildDrill([], []);
   };
   const start = () => {
-    if (savingRef.current || historyLoading || historyError) return;
+    if (savingRef.current || historyLoading || historyError || !ready || fontReady !== true) return;
     runningRef.current = true; typedRef.current = ""; setError(null);
     const d = makeDrill(mode);
     setDrill(d); setTyped(""); setSummary(null); setRunning(true);
     captureRef.current = []; lastTimeRef.current = performance.now();
   };
+  useEffect(() => { if (running) inputRef.current?.focus({ preventScroll: true }); }, [running]);
   const onChange = (value: string) => {
     if (!runningRef.current || value.length > drill.length) return;
     const previous = typedRef.current;
@@ -85,6 +93,8 @@ export function ReviewPage() {
   return (
     <div className="space-y-6 p-6">
       <div className="flex items-center gap-2"><Target size={22} /><h1 className="text-xl font-bold">Personalized Review</h1></div>
+      <p className="text-sm text-slate-500">Review layout: {layout.label}</p>
+      {legacy && fontReady === false && <p role="alert" className="text-amber-700">Install the Kruti Dev font in Font Setup before starting this review.</p>}
       {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
       <p className="text-sm text-slate-500 dark:text-slate-400">Drills are generated from YOUR real typing history. Each review session also records new keystroke data, so your Statistics get more accurate over time. Nothing here is simulated.</p>
       {historyLoading && <p role="status">Loading review history...</p>}
@@ -96,13 +106,18 @@ export function ReviewPage() {
       <div className="flex flex-wrap gap-2">
         {(Object.keys(MODE_LABELS) as Mode[]).map((m) => { const disabled = (m === "weak-keys" && weak.length === 0) || (m === "slow-keys" && slow.length === 0) || (m === "bigrams" && bigrams.length === 0); return (<button key={m} disabled={running || saving || historyLoading || !!historyError || (disabled && hasData)} onClick={() => setMode(m)} className={(mode === m ? "bg-brand-600 text-white " : "border border-slate-300 dark:border-slate-700 ") + "rounded-md px-3 py-2 text-sm disabled:opacity-40"}>{MODE_LABELS[m]}{disabled ? " (no data)" : ""}</button>); })}
       </div>
-      {!running && (<button disabled={saving || historyLoading || !!historyError} onClick={start} className="flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm text-white"><Play size={16} />Start {MODE_LABELS[mode]} drill</button>)}
+      {!running && (<button disabled={saving || historyLoading || !!historyError || !ready || fontReady !== true} onClick={start} className="flex items-center gap-2 rounded-md bg-brand-600 px-4 py-2 text-sm text-white"><Play size={16} />Start {MODE_LABELS[mode]} drill</button>)}
       {(running || drill) && (
         <div className="space-y-3">
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 font-mono text-lg tracking-wide dark:border-slate-800 dark:bg-slate-900">
+          <div className={`rounded-xl border border-slate-200 bg-slate-50 p-4 text-lg tracking-wide dark:border-slate-800 dark:bg-slate-900 ${legacy ? "font-krutidev" : "font-mono"}`}>
             {drill.split("").map((ch, i) => { const t = typed[i]; const cls = t == null ? "text-slate-400" : t === ch ? "text-green-600" : "bg-red-200 text-red-700 dark:bg-red-900/40"; return (<span key={i} className={cls}>{ch}</span>); })}
           </div>
-          <textarea maxLength={drill.length} onPaste={(e) => e.preventDefault()} onDrop={(e) => e.preventDefault()} autoFocus value={typed} onChange={(e) => onChange(e.target.value)} rows={3} disabled={!running} className="w-full rounded-xl border border-slate-300 p-3 font-mono text-lg dark:border-slate-700 dark:bg-slate-800" placeholder="Type the text above..." />
+          <textarea ref={inputRef} onKeyDown={(e) => {
+            if (e.ctrlKey || e.metaKey || e.altKey || e.key === "Tab") return;
+            if (e.key === "Backspace") { e.preventDefault(); onChange(typed.slice(0, -1)); return; }
+            const output = resolveKeyOutput(layout, e.code, e.shiftKey, e.getModifierState("CapsLock"));
+            if (output && output !== "\n") { e.preventDefault(); onChange(typed + output); }
+          }} maxLength={drill.length} onPaste={(e) => e.preventDefault()} onDrop={(e) => e.preventDefault()} autoFocus value={typed} onChange={(e) => onChange(e.target.value)} rows={3} disabled={!running} className={`w-full rounded-xl border border-slate-300 p-3 text-lg dark:border-slate-700 dark:bg-slate-800 ${legacy ? "font-krutidev" : "font-mono"}`} placeholder="Type the text above..." />
         </div>
       )}
       {summary && (
@@ -113,7 +128,7 @@ export function ReviewPage() {
             <div><div className="text-xs text-slate-500">Accuracy</div><div className="text-lg font-semibold">{summary.accuracy}%</div></div>
             <div><div className="text-xs text-slate-500">Avg / key</div><div className="text-lg font-semibold">{summary.avgDeltaMs}ms</div></div>
           </div>
-          <button disabled={saving || historyLoading || !!historyError} onClick={start} className="mt-4 flex items-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm dark:border-slate-700"><RotateCcw size={16} />Another drill</button>
+          <button disabled={saving || historyLoading || !!historyError || !ready || fontReady !== true} onClick={start} className="mt-4 flex items-center gap-2 rounded-md border border-slate-300 px-4 py-2 text-sm dark:border-slate-700"><RotateCcw size={16} />Another drill</button>
         </div>
       )}
     </div>

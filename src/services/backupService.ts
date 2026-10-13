@@ -93,6 +93,21 @@ export async function importAll(file: BackupFile, opts: { clear?: boolean } = {}
     if (dump.version > Math.round(target.verno * 10)) throw new Error("Backup was created by a newer app: " + name);
     const tableNames = new Set(target.tables.map((t) => t.name));
     if (Object.keys(dump.stores).some((s) => !tableNames.has(s))) throw new Error("Unsupported backup table in " + name);
+    // Check every primary key before any database is cleared. A malformed key in
+    // a later database must not leave earlier databases partially restored.
+    for (const [storeName, rows] of Object.entries(dump.stores)) {
+      const primary = target.table(storeName).schema.primKey;
+      const seen = new Set<string>();
+      for (const row of rows as Record<string, unknown>[]) {
+        const key = row[primary.keyPath as string];
+        if (key === undefined && primary.auto) continue;
+        try { indexedDB.cmp(key as IDBValidKey, key as IDBValidKey); }
+        catch { throw new Error("Invalid record ID in " + name + "/" + storeName); }
+        const encoded = JSON.stringify(key);
+        if (seen.has(encoded)) throw new Error("Duplicate record ID in " + name + "/" + storeName);
+        seen.add(encoded);
+      }
+    }
   }
   const clear = opts.clear ?? true;
   let dbCount = 0; let recordCount = 0; const skipped: string[] = [];

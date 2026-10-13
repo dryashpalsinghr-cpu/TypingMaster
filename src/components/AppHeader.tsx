@@ -43,18 +43,18 @@ export function AppHeader() {
       <div className="flex flex-wrap items-center gap-2">
         {error && <span role="alert" className="text-sm text-red-600">{error}</span>}
         <label className="flex items-center gap-1 text-xs text-[#5c7599] dark:text-slate-400">{t("header_typing_language")}
-          <select disabled={saving} value={activeProfile?.preferredTypingLanguage ?? "en"} onChange={(e) => void changeTypingLanguage(e.target.value as TypingLanguage)} className="rounded-md border border-[#1677e8]/25 bg-white/80 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800">
+          <select disabled={saving} value={activeProfile?.preferredTypingLanguage ?? "en"} onChange={(e) => void changeTypingLanguage(e.target.value as TypingLanguage)} className="rounded-md border border-[#1677e8]/25 bg-white/80 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
             <option value="en">English</option><option value="hi">हिन्दी</option>
           </select>
         </label>
         {activeProfile?.preferredTypingLanguage === "hi" && (
           <label className="flex items-center gap-1 text-xs text-[#5c7599] dark:text-slate-400">{t("header_layout")}
-            <select disabled={saving} value={effectiveLayout} onChange={(e) => void changeLayout(e.target.value as KeyboardLayoutId)} className="rounded-md border border-[#1677e8]/25 bg-white/80 px-2 py-1 text-sm font-devanagari dark:border-slate-700 dark:bg-slate-800">
+            <select disabled={saving} value={effectiveLayout} onChange={(e) => void changeLayout(e.target.value as KeyboardLayoutId)} className="rounded-md border border-[#1677e8]/25 bg-white/80 px-2 py-1 text-sm font-devanagari dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
               <option value="kruti-dev-010">Kruti Dev 010</option>
             </select>
           </label>
         )}
-        <select disabled={saving} aria-label="Interface language" value={interfaceLanguage} onChange={async (e) => { const language = e.target.value as "en" | "hi"; if (await savePreferences({ preferredInterfaceLanguage: language })) setInterfaceLanguage(language); }} className="rounded-md border border-[#1677e8]/25 bg-white/80 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800">
+        <select disabled={saving} aria-label="Interface language" value={interfaceLanguage} onChange={async (e) => { const language = e.target.value as "en" | "hi"; if (await savePreferences({ preferredInterfaceLanguage: language })) setInterfaceLanguage(language); }} className="rounded-md border border-[#1677e8]/25 bg-white/80 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
           <option value="en">English</option><option value="hi">हिन्दी</option>
         </select>
         <button onClick={toggleTheme} className="rounded-md p-2 text-[#0a5bc4] hover:bg-[#1677e8]/10 dark:text-slate-300 dark:hover:bg-slate-800" aria-label="Toggle theme">{theme === "light" ? <Moon size={18} /> : <Sun size={18} />}</button>

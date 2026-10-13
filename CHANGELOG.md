@@ -1,5 +1,15 @@
 # Changelog
 
+## Desktop functional audit — 2026-10-13
+- Keep game input separate from focused controls and dialogs; focus the playfield when starting.
+- Resolve game/review physical keys independently of the OS language; keep English game analytics labelled English.
+- Preserve case-sensitive legacy outputs in analytics and prevent bigrams across different layouts/profiles.
+- Filter review drills to their layout; show the legacy font and block missing-font review/Word Runner.
+- Keep header dropdown text readable in dark mode.
+- Prevent duplicate certificate clicks and display certificate load/save failures.
+- Preflight invalid/duplicate backup IDs across every database before clearing records; make analytics clearing transactional.
+- Added regression coverage for these failures. Windows installer runtime still requires a real-PC check.
+
 ## UI follow-up — 2026-10-13
 - Wrap long profile names and layout badges within narrow headers.
 - Keep keyboard reference keys readable in a keyboard-accessible horizontal scroll region.
