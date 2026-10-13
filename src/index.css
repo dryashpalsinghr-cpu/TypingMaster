@@ -302,3 +302,25 @@ body { font-family: "Noto Sans", system-ui, sans-serif; }
 .pp-stat-card { flex-wrap: wrap; }
 .pp-stat-card > .min-w-0 { flex: 1 1 60px; }
 .pp-stat-label { overflow-wrap: anywhere; }
+
+/* Exam workspace: only the passage and answer scroll, never push keys away. */
+.exam-session {
+  box-sizing: border-box;
+  display: grid;
+  height: 100%;
+  min-height: 580px;
+  grid-template-rows: auto minmax(90px, 1fr) auto minmax(72px, .65fr) auto auto;
+  gap: 8px;
+  padding: 12px 16px;
+}
+.exam-session-heading { display: grid; gap: 6px; }
+.exam-passage { min-height: 0; overflow: auto; overflow-wrap: anywhere; white-space: pre-wrap; overscroll-behavior: contain; }
+.exam-session > textarea { height: 100%; min-height: 0; resize: none; overflow: auto; }
+.exam-keyboard > div { padding: 8px; }
+.exam-keyboard > div > div { gap: 6px; margin-bottom: 5px; }
+.exam-keyboard > div > div:last-child { margin-bottom: 0; }
+.exam-keyboard [data-key-code] { height: 36px; min-width: 0; }
+@media (min-height: 900px) {
+  .exam-session { gap: 12px; padding: 16px 24px; }
+  .exam-keyboard [data-key-code] { height: 44px; }
+}

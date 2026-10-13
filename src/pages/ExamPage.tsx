@@ -19,6 +19,8 @@ export function ExamPage() {
   const [templates, setTemplates] = useState<ExamTemplate[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [phase, setPhase] = useState<Phase>("setup");
+  const [caret, setCaret] = useState(0);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const [capsLock, setCapsLock] = useState(false);
   const [typed, setTyped] = useState("");
   const [remaining, setRemaining] = useState(0);
@@ -47,7 +49,7 @@ export function ExamPage() {
   const layoutId = isKruti ? "kruti-dev-010" as const : "en-qwerty" as const;
   const { layout, rows, ready: mappingReady } = useKeyboardLayout(layoutId);
   const unsupported = useMemo(() => [...new Set([...(isKruti ? untypableChars(targetText) : []), ...unreachableCharacters(layout, targetText)])], [isKruti, targetText, layout]);
-  const nextExpected = phase === "running" ? targetText[typed.length] ?? null : null;
+  const nextExpected = phase === "running" ? targetText[caret] ?? null : null;
   const activeKey = nextExpected ? findKeyForOutput(layout, nextExpected) : null;
   const shiftRequired = nextExpected ? outputRequiresShift(layout, nextExpected, capsLock) : false;
   useEffect(() => {
@@ -92,11 +94,12 @@ export function ExamPage() {
   useEffect(() => () => {
     if (!finishingRef.current && examStartRef.current !== null) finishOnLeaveRef.current();
   }, []);
+  useEffect(() => { if (phase === "running") inputRef.current?.focus({ preventScroll: true }); }, [phase]);
   const start = () => {
     if (!selected || !mappingReady || krutiFont !== true || unsupported.length) return;
     typedRef.current = ""; focusLossRef.current = 0; keyDepressionsRef.current = 0;
     remainingRef.current = selected.durationSeconds; lastFocusLossAtRef.current = 0; finishingRef.current = false;
-    setTyped(""); setFocusLoss(0); setKeyDepressions(0); setResult(null);
+    setTyped(""); setCaret(0); setFocusLoss(0); setKeyDepressions(0); setResult(null);
     setRemaining(selected.durationSeconds); setPhase("running"); examStartRef.current = null;
     if (timerRef.current) window.clearInterval(timerRef.current);
   };
@@ -127,13 +130,17 @@ export function ExamPage() {
   const removeTemplate = async (id: number) => { await deleteTemplate(id); await load(); };
   if (phase === "running" && selected) {
     const overLimit = selected.focusLossLimit > 0 && focusLoss > selected.focusLossLimit;
-    return <div className="space-y-4 p-6">
+    return <div className="exam-session">
+      <div className="exam-session-heading">
       <div className="flex items-center justify-between"><div className="flex items-center gap-2"><Timer size={20} /><span className="text-2xl font-bold tabular-nums">{fmt(remaining)}</span></div><div className="text-sm text-slate-500">{isKruti ? "Kruti Dev 010" : "English QWERTY"} · Keys: {keyDepressions} · Focus losses: {focusLoss}</div><button onClick={finish} className="rounded-md bg-brand-600 px-4 py-2 text-sm text-white">{tr("Submit", "जमा करें")}</button></div>
       {focusLoss > 0 && <div className={`flex items-center gap-2 rounded-lg border p-3 text-sm ${overLimit ? "border-red-400 bg-red-50 text-red-700" : "border-amber-300 bg-amber-50 text-amber-800"}`}><AlertTriangle size={16} />You left the test window {focusLoss} time(s). Allowed: {selected.focusLossLimit}.</div>}
+      </div>
+      <section className="exam-passage rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900" aria-label={tr("Exam passage", "परीक्षा का पाठ")} tabIndex={0}>
       {isKruti && <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900"><div className="font-devanagari text-xl leading-loose">{selected.passage}</div><details className="mt-3"><summary className="cursor-pointer text-xs text-slate-400">Kruti Dev key-codes</summary><div className="mt-2 font-krutidev text-lg leading-relaxed">{targetText}</div></details></div>}
       {!isKruti && <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-lg leading-relaxed dark:border-slate-800 dark:bg-slate-900">{targetText}</div>}
+      </section>
       <p className="text-sm text-slate-500">{tr("Timer starts when you type the first character.", "पहला अक्षर टाइप करने पर समय शुरू होगा।")}</p>
-      <textarea autoFocus value={typed} onChange={(e) => changeTyped(e.target.value)} onKeyDown={(e) => {
+      <textarea ref={inputRef} aria-label={tr("Exam typing area", "परीक्षा टाइपिंग क्षेत्र")} value={typed} onSelect={(e) => setCaret(e.currentTarget.selectionStart)} onChange={(e) => { changeTyped(e.target.value); setCaret(e.target.selectionStart); }} onKeyDown={(e) => {
         setCapsLock(e.getModifierState("CapsLock"));
         if (finishingRef.current) { e.preventDefault(); return; }
         if (e.ctrlKey || e.metaKey || e.altKey || e.key === "Tab") return;
@@ -147,6 +154,7 @@ export function ExamPage() {
           const from = start === end && e.key === "Backspace" ? Math.max(0, start - 1) : start;
           const to = start === end && e.key === "Delete" ? Math.min(previous.length, end + 1) : end;
           changeTyped(previous.slice(0, from) + previous.slice(to));
+          setCaret(from);
           requestAnimationFrame(() => input.setSelectionRange(from, from));
           return;
         }
@@ -157,9 +165,12 @@ export function ExamPage() {
         beginTyping();
         keyDepressionsRef.current += 1; setKeyDepressions(keyDepressionsRef.current);
         changeTyped(previous.slice(0, start) + output + previous.slice(end));
+        setCaret(start + output.length);
         requestAnimationFrame(() => input.setSelectionRange(start + output.length, start + output.length));
-      }} onPaste={(e) => e.preventDefault()} onDrop={(e) => e.preventDefault()} rows={6} className={`${isKruti ? "font-krutidev" : "font-mono"} w-full rounded-xl border border-slate-300 p-4 text-xl dark:border-slate-700 dark:bg-slate-800`} placeholder={isKruti ? "Kruti Dev 010 में टाइप करें..." : "Start typing..."} />
+      }} onPaste={(e) => e.preventDefault()} onDrop={(e) => e.preventDefault()} rows={3} className={`${isKruti ? "font-krutidev" : "font-mono"} w-full rounded-xl border border-slate-300 p-4 text-xl dark:border-slate-700 dark:bg-slate-800`} placeholder={isKruti ? "Kruti Dev 010 में टाइप करें..." : "Start typing..."} />
+      <div className="exam-keyboard">
       <VirtualKeyboard rows={rows} activeCode={activeKey?.code ?? null} pressedCode={null} pressedCorrect={null} shiftActive={false} shiftRequired={shiftRequired} showFingerColors devanagari={isKruti} krutiDev={isKruti} />
+      </div>
       <div className="text-xs text-slate-400">Backspace {selected.allowBackspace ? "allowed" : "disabled"} · Target: {selected.targetWpm} WPM / {selected.targetKdph} KDPH / {selected.minAccuracy}% accuracy</div>
     </div>;
   }
