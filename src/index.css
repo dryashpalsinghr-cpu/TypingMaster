@@ -2,9 +2,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-:root { color-scheme: light dark; }
+:root { color-scheme: light; }
+.dark { color-scheme: dark; }
 html, body, #root { height: 100%; }
-body { font-family: "Noto Sans", system-ui, sans-serif; }
+body { font-family: "Noto Sans", system-ui, sans-serif; color: #0f172a; }
+.dark body { color: #e2e8f0; }
 .font-devanagari { font-family: "Noto Sans Devanagari", "Noto Sans", sans-serif; }
 /* Legacy Kruti Dev font. The copyrighted font is NOT bundled. Provide your own licensed file at /fonts/krutidev010.woff2 if you self-host. */
 @font-face { font-family: "KrutiDev010"; src: url("/fonts/krutidev010.woff2") format("woff2"); font-display: swap; }
